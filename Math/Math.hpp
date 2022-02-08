@@ -145,7 +145,10 @@ struct VectorBase
 };
 
 template < typename T, size_t S >
-struct Vector : public VectorBase< T, S > { };
+struct Vector : public VectorBase< T, S >
+{
+	T Data[ S ];
+};
 
 template < typename T, size_t... I >
 struct Swizzler : public VectorBase< T, sizeof...( I ) >
@@ -704,10 +707,72 @@ typedef Vector< int, 2 > Vector2Int;
 typedef Vector< int, 3 > Vector3Int;
 typedef Vector< int, 4 > Vector4Int;
 
-template < typename T, size_t X, size_t Y >
-struct Matrix
+template < typename T, size_t S, size_t N >
+struct MatrixSlice : public VectorBase< T, S >
 {
+	template < typename U >
+	Vector< T, S > operator +( const VectorBase< U, S >& a_Vector )
+	{
+		Vector< T, S > Result;
 
+		if constexpr ( is_base_of)
+
+		return Result;
+	}
+};
+
+template < typename T, size_t X, size_t Y, size_t N >
+struct MatrixCol;
+
+template < typename T, size_t X, size_t Y, size_t N >
+struct MatrixRow : public MatrixSlice< T, X, N >
+{
+	T Data[ 1 ];
+
+	inline T& operator[]( size_t a_Index )
+	{
+		return Data[ N * X + a_Index ];
+	}
+};
+
+template < typename T, size_t X, size_t Y, size_t N >
+struct MatrixCol : public MatrixSlice< T, Y, N >
+{
+	T Data[ 1 ];
+
+	inline T& operator[]( size_t a_Index )
+	{
+		return Data[ N + X * a_Index ];
+	}
+};
+
+template < typename T, size_t X, size_t Y >
+struct Matrix : public VectorBase< T, X * Y >
+{
+	T Data[ X * Y ];
+
+	Matrix( initializer_list< T >&& a_InitializerList )
+	{
+		size_t Size = a_InitializerList.size();
+		auto Begin = a_InitializerList.begin();
+
+		for ( int i = 0; i < X * Y && Size > 0; ++i, --Size, ++Begin )
+		{
+			this->operator[]( i ) = *Begin;
+		}
+	}
+
+	template < size_t N >
+	inline MatrixRow< T, X, Y, N >& GetRow()
+	{
+		return reinterpret_cast< MatrixRow< T, X, Y, N >& >( *this );
+	}
+
+	template < size_t N >
+	inline MatrixCol< T, X, Y, N >& GetCol()
+	{
+		return reinterpret_cast< MatrixCol< T, X, Y, N >& >( *this );
+	}
 };
 
 class Math
@@ -773,6 +838,20 @@ public:
 	template < typename T >
 	static T Cross( const Vector< T, 3 >& a_VectorA, const Vector< T, 3 >& a_VectorB )
 	{
+
+	}
+
+	template < typename T1, typename T2, size_t S >
+	inline static Vector< T1, S > Multuply( const Vector< T1, S >& a_VectorA, const Vector< T2, S >& a_VectorB )
+	{
+		return a_VectorA * a_VectorB;
+	}
+
+	template < typename T1, typename T2, size_t X, size_t Y, size_t Z >
+	static Matrix< T1, Z, Y > Multiply( const Matrix< T1, X, Y >& a_MatrixA, const Matrix< T2, Z, X >& a_MatrixB )
+	{
+		//Matrix< T, Z, X > Result;
+
 
 	}
 };
