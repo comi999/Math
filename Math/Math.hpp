@@ -3,14 +3,38 @@
 
 using namespace std;
 
-template < typename T >
-struct Indexable { };
+
+template < typename Derived, size_t Increment = 1 >
+struct Indexable
+{
+private:
+
+	template < typename T >
+	struct HasIndexer
+	{
+		template < typename U > static char test( decltype( &U::operator[] ) );
+		template < typename U > static long test( ... );
+		static constexpr bool Value = sizeof( test< T >( 0 ) ) == sizeof( char );
+	};
+
+public:
+
+	inline auto& operator[]( size_t a_Index )
+	{
+		return ( *static_cast< Derived* >( this ) )[ a_Index ];
+	}
+
+	inline const auto& operator[]( size_t a_Index ) const
+	{
+		return ( *static_cast< const Derived* >( this ) )[ a_Index ];
+	}
+};
 
 template < typename T, size_t S >
 struct Vector;
 
 template < typename T, size_t S >
-struct VectorBase : public Indexable< T >
+struct VectorBase : public Indexable< VectorBase< T, S > >
 {
 	inline T& operator[]( size_t a_Index )
 	{
@@ -151,6 +175,28 @@ template < typename T, size_t S >
 struct Vector : public VectorBase< T, S >
 {
 	T Data[ S ];
+
+	Vector( initializer_list< T >&& a_InitializerList )
+	{
+		size_t Size = S > a_InitializerList.size() ? a_InitializerList.size() : S;
+		auto Begin = a_InitializerList.begin();
+
+		for ( int i = 0; i < Size; ++Begin, ++i )
+		{
+			Data[ i ] = *Begin;
+		}
+	}
+
+	Vector( initializer_list< T >&& a_InitializerList )
+	{
+		size_t Size = S > a_InitializerList.size() ? a_InitializerList.size() : S;
+		auto Begin = a_InitializerList.begin();
+
+		for ( int i = 0; i < Size; ++Begin, ++i )
+		{
+			Data[ i ] = *Begin;
+		}
+	}
 };
 
 template < typename T, size_t... I >
@@ -710,17 +756,11 @@ typedef Vector< int, 2 > Vector2Int;
 typedef Vector< int, 3 > Vector3Int;
 typedef Vector< int, 4 > Vector4Int;
 
-template < typename T, size_t S, size_t N >
-struct MatrixVector
-{
-
-};
-
 template < typename T, size_t X, size_t Y, size_t N >
 struct MatrixCol;
 
 template < typename T, size_t X, size_t Y, size_t N >
-struct MatrixRow : public MatrixSlice< T, X, N >
+struct MatrixRow : Indexable< MatrixRow< T, X, Y, N > >
 {
 	T Data[ 1 ];
 
@@ -728,14 +768,24 @@ struct MatrixRow : public MatrixSlice< T, X, N >
 	{
 		return Data[ N * X + a_Index ];
 	}
+
+	inline const T& operator[]( size_t a_Index ) const
+	{
+		return Data[ N * X + a_Index ];
+	}
 };
 
 template < typename T, size_t X, size_t Y, size_t N >
-struct MatrixCol : public MatrixSlice< T, Y, N >
+struct MatrixCol : Indexable< MatrixCol< T, X, Y, N > >
 {
 	T Data[ 1 ];
 
 	inline T& operator[]( size_t a_Index )
+	{
+		return Data[ N + X * a_Index ];
+	}
+
+	inline const T& operator[]( size_t a_Index ) const
 	{
 		return Data[ N + X * a_Index ];
 	}
@@ -746,7 +796,7 @@ struct Matrix : public VectorBase< T, X * Y >
 {
 	T Data[ X * Y ];
 
-	Matrix( initializer_list< T >&& a_InitializerList )
+	/*Matrix( initializer_list< T >&& a_InitializerList )
 	{
 		size_t Size = a_InitializerList.size();
 		auto Begin = a_InitializerList.begin();
@@ -755,7 +805,7 @@ struct Matrix : public VectorBase< T, X * Y >
 		{
 			this->operator[]( i ) = *Begin;
 		}
-	}
+	}*/
 
 	template < size_t N >
 	inline MatrixRow< T, X, Y, N >& GetRow()
@@ -842,11 +892,11 @@ public:
 		return a_VectorA * a_VectorB;
 	}
 
-	template < typename T1, typename T2, size_t X, size_t Y, size_t Z >
-	static Matrix< T1, Z, Y > Multiply( const Matrix< T1, X, Y >& a_MatrixA, const Matrix< T2, Z, X >& a_MatrixB )
-	{
-		//Matrix< T, Z, X > Result;
+	//template < typename T1, typename T2, size_t X, size_t Y, size_t Z >
+	//static Matrix< T1, Z, Y > Multiply( const Matrix< T1, X, Y >& a_MatrixA, const Matrix< T2, Z, X >& a_MatrixB )
+	//{
+	//	//Matrix< T, Z, X > Result;
 
 
-	}
+	//}
 };
