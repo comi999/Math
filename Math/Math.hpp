@@ -3,146 +3,119 @@
 
 using namespace std;
 
+template < typename T, size_t S >
+struct Vector;
 
-template < typename Derived, size_t Increment = 1 >
+template < typename T, size_t S, size_t Increment = 1 >
 struct Indexable
 {
-private:
-
-	template < typename T >
-	struct HasIndexer
-	{
-		template < typename U > static char test( decltype( &U::operator[] ) );
-		template < typename U > static long test( ... );
-		static constexpr bool Value = sizeof( test< T >( 0 ) ) == sizeof( char );
-	};
-
-public:
-
 	inline auto& operator[]( size_t a_Index )
 	{
-		return ( *static_cast< Derived* >( this ) )[ a_Index ];
+		return reinterpret_cast< T* >( this )[ a_Index * Increment ];
 	}
 
 	inline const auto& operator[]( size_t a_Index ) const
 	{
-		return ( *static_cast< const Derived* >( this ) )[ a_Index ];
-	}
-};
-
-template < typename T, size_t S >
-struct Vector;
-
-template < typename T, size_t S >
-struct VectorBase : public Indexable< VectorBase< T, S > >
-{
-	inline T& operator[]( size_t a_Index )
-	{
-		return reinterpret_cast< T* >( this )[ a_Index ];
+		return reinterpret_cast< const T* >( this )[ a_Index * Increment ];
 	}
 
-	inline const T& operator[]( size_t a_Index ) const
-	{
-		return reinterpret_cast< const T* >( this )[ a_Index ];
-	}
-
-	template < typename U >
-	Vector< T, S > operator+( const VectorBase< U, S >& a_Vector ) const
+	template < typename U, size_t I >
+	Vector< T, S > operator+( const Indexable< U, S, I >& a_Indexable ) const
 	{
 		Vector< T, S > Result;
 
 		for ( int i = 0; i < S; ++i )
 		{
-			Result[ i ] = operator[]( i ) + static_cast< T >( a_Vector[ i ] );
+			Result[ i ] = operator[]( i ) + static_cast< T >( a_Indexable[ i ] );
 		}
 
 		return Result;
 	}
 
-	template < typename U >
-	Vector< T, S >& operator+=( const VectorBase< U, S >& a_Vector )
+	template < typename U, size_t I >
+	Vector< T, S >& operator+=( const Indexable< U, S, I >& a_Indexable )
 	{
 		for ( int i = 0; i < S; ++i )
 		{
-			operator[]( i ) += static_cast< T >( a_Vector[ i ] );
+			operator[]( i ) += static_cast< T >( a_Indexable[ i ] );
 		}
 
-		return *reinterpret_cast< Vector< T, S >* >( this );
+		return *this;
 	}
 
-	template < typename U >
-	Vector< T, S > operator-( const VectorBase< U, S >& a_Vector ) const
+	template < typename U, size_t I >
+	Vector< T, S > operator-( const Indexable< U, S, I >& a_Indexable ) const
 	{
 		Vector< T, S > Result;
 
 		for ( int i = 0; i < S; ++i )
 		{
-			Result[ i ] = operator[]( i ) - static_cast< T >( a_Vector[ i ] );
+			Result[ i ] = operator[]( i ) - static_cast< T >( a_Indexable[ i ] );
 		}
 
 		return Result;
 	}
 
-	template < typename U >
-	Vector< T, S >& operator-=( const VectorBase< U, S >& a_Vector )
+	template < typename U, size_t I >
+	Vector< T, S >& operator-=( const Indexable< U, S, I >& a_Indexable )
 	{
 		for ( int i = 0; i < S; ++i )
 		{
-			operator[]( i ) -= static_cast< T >( a_Vector[ i ] );
+			operator[]( i ) -= static_cast< T >( a_Indexable[ i ] );
 		}
 
-		return *reinterpret_cast< Vector< T, S >* >( this );
+		return *this;
 	}
 
-	template < typename U >
-	Vector< T, S > operator*( const VectorBase< U, S >& a_Vector ) const
+	template < typename U, size_t I >
+	Vector< T, S > operator*( const Indexable< U, S, I >& a_Indexable ) const
 	{
 		Vector< T, S > Result;
 
 		for ( int i = 0; i < S; ++i )
 		{
-			Result[ i ] = operator[]( i ) * static_cast< T >( a_Vector[ i ] );
+			Result[ i ] = operator[]( i ) * static_cast< T >( a_Indexable[ i ] );
 		}
 
 		return Result;
 	}
 
-	template < typename U >
-	Vector< T, S >& operator*=( const VectorBase< U, S >& a_Vector )
+	template < typename U, size_t I >
+	Vector< T, S >& operator*=( const Indexable< U, S, I >& a_Indexable )
 	{
 		for ( int i = 0; i < S; ++i )
 		{
-			operator[]( i ) *= static_cast< T >( a_Vector[ i ] );
+			operator[]( i ) *= static_cast< T >( a_Indexable[ i ] );
 		}
 
-		return *reinterpret_cast< Vector< T, S >* >( this );
+		return *this;
 	}
 
-	template < typename U >
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
 	Vector< T, S > operator*( U a_Scalar ) const
 	{
 		Vector< T, S > Result;
 
 		for ( int i = 0; i < S; ++i )
 		{
-			Result[ i ] *= a_Scalar;
+			Result[ i ] *= static_cast< T >( a_Scalar );
 		}
 
 		return Result;
 	}
 
-	template < typename U >
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
 	Vector< T, S >& operator*=( U a_Scalar )
 	{
 		for ( int i = 0; i < S; ++i )
 		{
-			operator[]( i ) *= a_Scalar;
+			operator[]( i ) *= static_cast< T >( a_Scalar );
 		}
 
-		return *reinterpret_cast< Vector< T, S >* >( this );
+		return *this;
 	}
 
-	template < typename U >
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
 	Vector< T, S > operator/( U a_Scalar ) const
 	{
 		Vector< T, S > Result;
@@ -156,7 +129,7 @@ struct VectorBase : public Indexable< VectorBase< T, S > >
 		return Result;
 	}
 
-	template < typename U >
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
 	Vector< T, S >& operator/=( U a_Scalar )
 	{
 		float Scalar = 1.0f / a_Scalar;
@@ -166,17 +139,19 @@ struct VectorBase : public Indexable< VectorBase< T, S > >
 			operator[]( i ) *= Scalar;
 		}
 
-		return *reinterpret_cast< Vector< T, S >* >( this );
+		return *this;
 	}
-
 };
 
 template < typename T, size_t S >
-struct Vector : public VectorBase< T, S >
+struct Vector;
+
+template < typename T, size_t S >
+struct Vector : public Indexable< T, S >
 {
 	T Data[ S ];
 
-	Vector( initializer_list< T >&& a_InitializerList )
+	/*Vector( initializer_list< T >&& a_InitializerList )
 	{
 		size_t Size = S > a_InitializerList.size() ? a_InitializerList.size() : S;
 		auto Begin = a_InitializerList.begin();
@@ -196,19 +171,17 @@ struct Vector : public VectorBase< T, S >
 		{
 			Data[ i ] = *Begin;
 		}
-	}
+	}*/
 };
 
 template < typename T, size_t... I >
-struct Swizzler : public VectorBase< T, sizeof...( I ) >
+struct Swizzler : public Indexable< T, sizeof...( I ) >
 {
-	T Data[ 1 ];
-
 	template < typename U >
 	operator Vector< U, sizeof...( I ) >()
 	{
 		Vector< U, sizeof...( I ) > Output;
-		Repack< U, I... >( reinterpret_cast< U* >( &Output ), Data );
+		Repack< U, I... >( reinterpret_cast< U* >( &Output ), reinterpret_cast< T* >( this ) );
 		return Output;
 	}
 
@@ -227,7 +200,7 @@ private:
 };
 
 template < typename T >
-struct Vector< T, 2 > : public VectorBase< T, 2 >
+struct Vector< T, 2 > : public Indexable< T, 2 >
 {
 	union
 	{
@@ -277,7 +250,7 @@ template < typename T > const Vector< T, 2 > Vector< T, 2 >::Zero( 0, 0 );
 template < typename T > const Vector< T, 2 > Vector< T, 2 >::One ( 1, 1 );
 
 template < typename T >
-struct Vector< T, 3 > : public VectorBase< T, 3 >
+struct Vector< T, 3 > : public Indexable< T, 3 >
 {
 	union
 	{
@@ -362,7 +335,7 @@ template < typename T > const Vector< T, 3 > Vector< T, 3 >::Zero( 0, 0, 0 );
 template < typename T > const Vector< T, 3 > Vector< T, 3 >::One ( 1, 1, 1 );
 
 template < typename T >
-struct Vector< T, 4 > : public VectorBase< T, 4 >
+struct Vector< T, 4 > : public Indexable< T, 4 >
 {
 	union
 	{
@@ -756,69 +729,69 @@ typedef Vector< int, 2 > Vector2Int;
 typedef Vector< int, 3 > Vector3Int;
 typedef Vector< int, 4 > Vector4Int;
 
-template < typename T, size_t X, size_t Y, size_t N >
-struct MatrixCol;
-
-template < typename T, size_t X, size_t Y, size_t N >
-struct MatrixRow : Indexable< MatrixRow< T, X, Y, N > >
-{
-	T Data[ 1 ];
-
-	inline T& operator[]( size_t a_Index )
-	{
-		return Data[ N * X + a_Index ];
-	}
-
-	inline const T& operator[]( size_t a_Index ) const
-	{
-		return Data[ N * X + a_Index ];
-	}
-};
-
-template < typename T, size_t X, size_t Y, size_t N >
-struct MatrixCol : Indexable< MatrixCol< T, X, Y, N > >
-{
-	T Data[ 1 ];
-
-	inline T& operator[]( size_t a_Index )
-	{
-		return Data[ N + X * a_Index ];
-	}
-
-	inline const T& operator[]( size_t a_Index ) const
-	{
-		return Data[ N + X * a_Index ];
-	}
-};
-
-template < typename T, size_t X, size_t Y >
-struct Matrix : public VectorBase< T, X * Y >
-{
-	T Data[ X * Y ];
-
-	/*Matrix( initializer_list< T >&& a_InitializerList )
-	{
-		size_t Size = a_InitializerList.size();
-		auto Begin = a_InitializerList.begin();
-
-		for ( int i = 0; i < X * Y && Size > 0; ++i, --Size, ++Begin )
-		{
-			this->operator[]( i ) = *Begin;
-		}
-	}*/
-
-	template < size_t N >
-	inline MatrixRow< T, X, Y, N >& GetRow()
-	{
-		return reinterpret_cast< MatrixRow< T, X, Y, N >& >( *this );
-	}
-
-	template < size_t N >
-	inline MatrixCol< T, X, Y, N >& GetCol()
-	{
-		return reinterpret_cast< MatrixCol< T, X, Y, N >& >( *this );
-	}
-};
+//template < typename T, size_t X, size_t Y, size_t N >
+//struct MatrixCol;
+//
+//template < typename T, size_t X, size_t Y, size_t N >
+//struct MatrixRow : Indexable< MatrixRow< T, X, Y, N > >
+//{
+//	T Data[ 1 ];
+//
+//	inline T& operator[]( size_t a_Index )
+//	{
+//		return Data[ N * X + a_Index ];
+//	}
+//
+//	inline const T& operator[]( size_t a_Index ) const
+//	{
+//		return Data[ N * X + a_Index ];
+//	}
+//};
+//
+//template < typename T, size_t X, size_t Y, size_t N >
+//struct MatrixCol : Indexable< MatrixCol< T, X, Y, N > >
+//{
+//	T Data[ 1 ];
+//
+//	inline T& operator[]( size_t a_Index )
+//	{
+//		return Data[ N + X * a_Index ];
+//	}
+//
+//	inline const T& operator[]( size_t a_Index ) const
+//	{
+//		return Data[ N + X * a_Index ];
+//	}
+//};
+//
+//template < typename T, size_t X, size_t Y >
+//struct Matrix : public VectorBase< T, X * Y >
+//{
+//	T Data[ X * Y ];
+//
+//	/*Matrix( initializer_list< T >&& a_InitializerList )
+//	{
+//		size_t Size = a_InitializerList.size();
+//		auto Begin = a_InitializerList.begin();
+//
+//		for ( int i = 0; i < X * Y && Size > 0; ++i, --Size, ++Begin )
+//		{
+//			this->operator[]( i ) = *Begin;
+//		}
+//	}*/
+//
+//	template < size_t N >
+//	inline MatrixRow< T, X, Y, N >& GetRow()
+//	{
+//		return reinterpret_cast< MatrixRow< T, X, Y, N >& >( *this );
+//	}
+//
+//	template < size_t N >
+//	inline MatrixCol< T, X, Y, N >& GetCol()
+//	{
+//		return reinterpret_cast< MatrixCol< T, X, Y, N >& >( *this );
+//	}
+//};
 
 class Math
 {
