@@ -3,11 +3,14 @@
 
 using namespace std;
 
+template < typename T >
+struct Indexable { };
+
 template < typename T, size_t S >
 struct Vector;
 
 template < typename T, size_t S >
-struct VectorBase
+struct VectorBase : public Indexable< T >
 {
 	inline T& operator[]( size_t a_Index )
 	{
