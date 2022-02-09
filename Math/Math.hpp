@@ -708,17 +708,9 @@ typedef Vector< int, 3 > Vector3Int;
 typedef Vector< int, 4 > Vector4Int;
 
 template < typename T, size_t S, size_t N >
-struct MatrixSlice : public VectorBase< T, S >
+struct MatrixVector
 {
-	template < typename U >
-	Vector< T, S > operator +( const VectorBase< U, S >& a_Vector )
-	{
-		Vector< T, S > Result;
 
-		if constexpr ( is_base_of)
-
-		return Result;
-	}
 };
 
 template < typename T, size_t X, size_t Y, size_t N >
