@@ -1,6 +1,8 @@
 #include <iostream>
 #include "Math.hpp"
 
+
+
 int main()
 {
 	auto diag = Matrix< int, 4>();
@@ -13,4 +15,29 @@ int main()
 	auto mat2 = Math::Multiply( mat0, mat1 );
 
 	mat1 *= 2;
+
+	auto& submat0 = mat.GetSubMatrix< 1, 1 >();
+
+	for ( int m = 0; m < submat0.SizeM; ++m )
+	{
+		auto& row = submat0.GetRow( m );
+
+		for ( int n = 0; n < submat0.SizeN; ++n )
+		{
+			std::cout << row[ n ] << std::endl;
+		}
+	}
+
+	auto& submat = submat0.GetSubMatrix< 1, 1 >();
+	
+	for ( int m = 0; m < submat.SizeM; ++m )
+	{
+		auto& row = submat.GetRow( m );
+
+		for ( int n = 0; n < submat.SizeN; ++n )
+		{
+			std::cout << row[ n ] << std::endl;
+		}
+	}
+
 }

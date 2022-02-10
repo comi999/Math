@@ -3,6 +3,80 @@
 
 using namespace std;
 
+template < typename T, size_t S, size_t Increment = 1 >
+struct Indexer
+{
+	static constexpr size_t Size = S;
+
+	auto& operator[]( size_t a_Index )
+	{
+		return reinterpret_cast< T* >( this )[ a_Index * Increment ];
+	}
+};
+
+template < typename _Indexer, size_t S, size_t Skip, size_t Increment = 1 >
+struct SkipIndexer
+{
+	static constexpr size_t Size = S - 1;
+
+	auto& operator[]( size_t a_Index )
+	{
+		size_t Index = a_Index + ( a_Index >= Skip ? 1 : 0 );
+		size_t Offset = Index * Increment;
+		_Indexer* This = reinterpret_cast< _Indexer* >( this );
+		return This->operator[]( Offset );
+	}
+};
+
+template < typename T, typename _IndexerM, typename _IndexerN, size_t SkipM, size_t SkipN >
+struct SubMatrix
+{
+	static constexpr size_t SizeM = _IndexerM::Size - 1;
+	static constexpr size_t SizeN = _IndexerN::Size - 1;
+	typedef SkipIndexer< _IndexerM, SizeM, SkipM, SizeN > SubIndexerM;
+	typedef SkipIndexer< _IndexerN, SizeN, SkipN        > SubIndexerN;
+
+	inline auto& GetRow( size_t a_Index )
+	{
+		T& Origin = reinterpret_cast< _IndexerM& >( *this )[ a_Index ];
+
+		return reinterpret_cast< SubIndexerN& >( Origin );
+	}
+
+	auto& GetCol( size_t a_Index )
+	{
+		T& Origin = reinterpret_cast< _IndexerN& >( *this )[ a_Index ];
+
+		return reinterpret_cast< SubIndexerM& >( Origin );
+	}
+
+	template < size_t _SkipM, size_t _SkipN >
+	inline auto& GetSubMatrix()
+	{
+		return reinterpret_cast< SubMatrix< T, SubIndexerM, SubIndexerN, _SkipM, _SkipN >& >( *this );
+	}
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 template < typename T, size_t S >
 struct Vector;
 
@@ -1230,7 +1304,6 @@ template < typename T > const Matrix< T, 3 > Matrix< T, 3 >::Identity = []()
 	return Result;
 }( );
 
-
 template < typename T >
 struct Matrix< T, 4 > : IMatrix< T, 4 >
 {
@@ -1339,6 +1412,14 @@ struct Matrix< T, 4 > : IMatrix< T, 4 >
 	static const Matrix< T, 4 > Zero;
 	static const Matrix< T, 4 > One;
 	static const Matrix< T, 4 > Identity;
+
+	template < size_t AxisM, size_t AxisN >
+	inline auto& GetSubMatrix()
+	{
+		typedef SubMatrix< T, Indexer< T, 4, 4 >, Indexer< T, 4 >, AxisM, AxisN > SubMat;
+		SubMat& This = reinterpret_cast< SubMat& >( *this );
+		return This;
+	}
 };
 
 template < typename T > const Matrix< T, 4 > Matrix< T, 4 >::Zero = Matrix< T, 4 >( 0 );
@@ -1362,6 +1443,8 @@ typedef Matrix< float, 4 > Matrix4;
 typedef Matrix< int, 2 > Matrix2Int;
 typedef Matrix< int, 3 > Matrix3Int;
 typedef Matrix< int, 4 > Matrix4Int;
+
+
 
 class Math
 {
