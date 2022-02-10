@@ -6,6 +6,9 @@ using namespace std;
 template < typename T, size_t S >
 struct Vector;
 
+template < typename T, size_t M, size_t N >
+struct Matrix;
+
 template < typename T, size_t S, size_t Increment = 1 >
 struct IVector
 {
@@ -17,6 +20,19 @@ struct IVector
 	inline const auto& operator[]( size_t a_Index ) const
 	{
 		return reinterpret_cast< const T* >( this )[ a_Index * Increment ];
+	}
+
+	template < typename U, size_t I >
+	IVector< T, S, Increment >& operator=( const IVector< U, S, I >& a_IVector )
+	{
+		for ( int i = 0; i < S; ++i )
+		{
+			T& a = operator[]( i );
+			T b = a_IVector[ i ];
+			operator[]( i ) = a_IVector[ i ];
+		}
+
+		return *this;
 	}
 
 	template < typename U, size_t I >
@@ -142,6 +158,11 @@ struct IVector
 		return *this;
 	}
 
+	constexpr size_t GetDimensions() const
+	{
+		return S;
+	}
+
 	Vector< T, S > ToVector() const
 	{
 		Vector< T, S > Result;
@@ -188,6 +209,12 @@ struct IVector
 	{
 		return ToVectorN< 4 >();
 	}
+
+	template < size_t M, size_t N = M >
+	inline Matrix< T, M, N > ToMatrixMN() const
+	{
+		return reinterpret_cast< Matrix< T, M, N >&& >( ToVectorN< M* N >() );
+	}
 };
 
 template < typename T, size_t S >
@@ -203,6 +230,18 @@ struct Vector : public IVector< T, S >
 		for ( size_t i = 0; i < S; ++i )
 		{
 			Data[ i ] = static_cast< T >( a_Scalar );
+		}
+	}
+
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
+	Vector( initializer_list< U >&& a_InitializerList )
+	{
+		size_t Size = S < a_InitializerList.size() ? S : a_InitializerList.size();
+		auto Begin = a_InitializerList.begin();
+
+		for ( size_t i = 0; i < Size; ++i, ++Begin )
+		{
+			Data[ i ] = static_cast< T >( *Begin );
 		}
 	}
 
@@ -265,6 +304,12 @@ struct Swizzler : public IVector< T, sizeof...( I ) >
 		return ToVectorN< 4 >();
 	}
 
+	template < size_t M, size_t N = M >
+	inline Matrix< T, M, N > ToMatrixMN() const
+	{
+		return reinterpret_cast< Matrix< T, M, N >&& >( ToVectorN< M * N >() );
+	}
+
 private:
 
 	template < typename U, size_t I0, size_t... I >
@@ -284,6 +329,7 @@ struct Vector< T, 2 > : public IVector< T, 2 >
 {
 	union
 	{
+		T Data[ 2 ];
 		struct { T x; T y; };
 
 		union
@@ -295,10 +341,16 @@ struct Vector< T, 2 > : public IVector< T, 2 >
 		} swizzle;
 	};
 
-	Vector()
-		: x( static_cast< T >( 0 ) )
-		, y( static_cast< T >( 0 ) )
-	{ }
+	Vector() = default;
+
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
+	Vector( U a_Scalar )
+	{
+		for ( size_t i = 0; i < 2; ++i )
+		{
+			Data[ i ] = static_cast< T >( a_Scalar );
+		}
+	}
 
 	template < typename U >
 	Vector( U a_X, U a_Y )
@@ -312,7 +364,6 @@ struct Vector< T, 2 > : public IVector< T, 2 >
 		, y( static_cast< T >( a_Vector.y ) )
 	{ }
 
-
 	static const Vector< T, 2 > Zero;
 	static const Vector< T, 2 > One;
 };
@@ -325,6 +376,7 @@ struct Vector< T, 3 > : public IVector< T, 3 >
 {
 	union
 	{
+		T Data[ 3 ];
 		struct { T x; T y; T z; };
 		
 		union
@@ -368,11 +420,16 @@ struct Vector< T, 3 > : public IVector< T, 3 >
 		} swizzle;
 	};
 
-	Vector()
-		: x( static_cast< T >( 0 ) )
-		, y( static_cast< T >( 0 ) )
-		, z( static_cast< T >( 0 ) )
-	{ }
+	Vector() = default;
+
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
+	Vector( U a_Scalar )
+	{
+		for ( size_t i = 0; i < 3; ++i )
+		{
+			Data[ i ] = static_cast< T >( a_Scalar );
+		}
+	}
 
 	template < typename U >
 	Vector( U a_X, U a_Y, U a_Z )
@@ -400,6 +457,7 @@ struct Vector< T, 4 > : public IVector< T, 4 >
 {
 	union
 	{
+		T Data[ 4 ];
 		struct { T x; T y; T z; T w; };
 		
 		union
@@ -743,12 +801,16 @@ struct Vector< T, 4 > : public IVector< T, 4 >
 		} swizzle;
 	};
 
-	Vector()
-		: x( static_cast< T >( 0 ) )
-		, y( static_cast< T >( 0 ) )
-		, z( static_cast< T >( 0 ) )
-		, w( static_cast< T >( 0 ) )
-	{ }
+	Vector() = default;
+
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
+	Vector( U a_Scalar )
+	{
+		for ( size_t i = 0; i < 4; ++i )
+		{
+			Data[ i ] = static_cast< T >( a_Scalar );
+		}
+	}
 
 	template < typename U >
 	Vector( U a_X, U a_Y, U a_Z, U a_W )
@@ -793,7 +855,7 @@ typedef Vector< int, 4 > Vector4Int;
 template < typename T, size_t M, size_t N >
 struct Matrix;
 
-template < typename T, size_t M, size_t N >
+template < typename T, size_t M, size_t N = M >
 struct IMatrix : public IVector< T, M * N >
 {
 	inline IVector< T, N >& GetRow( size_t a_Row )
@@ -814,6 +876,16 @@ struct IMatrix : public IVector< T, M * N >
 	inline const IVector< T, M, N >& GetCol( size_t a_Col ) const
 	{
 		return reinterpret_cast< const IVector< T, M, N >& >( reinterpret_cast< const T* >( this )[ a_Col ] );
+	}
+
+	constexpr size_t GetRows() const
+	{
+		return M;
+	}
+
+	constexpr size_t GetCols() const
+	{
+		return N;
 	}
 
 	Matrix< T, M, N > ToMatrix() const
@@ -919,11 +991,15 @@ struct IMatrix : public IVector< T, M * N >
 	}
 };
 
-template < typename T, size_t M, size_t N >
+template < typename T, size_t M, size_t N = M >
 struct Matrix : public IMatrix< T, M, N >
 {
-	T Data[ M * N ];
-
+	union
+	{
+		T Data[ M * N ];
+		IVector< T, ( M < N ? M : N ), N + 1 > diagonal;
+	};
+	
 	Matrix() = default;
 
 	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
@@ -935,6 +1011,18 @@ struct Matrix : public IMatrix< T, M, N >
 		}
 	}
 
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
+	Matrix( initializer_list< U >&& a_InitializerList )
+	{
+		size_t Size = M * N < a_InitializerList.size() ? M * N : a_InitializerList.size();
+		auto Begin = a_InitializerList.begin();
+
+		for ( size_t i = 0; i < Size; ++i, ++Begin )
+		{
+			Data[ i ] = static_cast< T >( *Begin );
+		}
+	}
+
 	static const Matrix< T, M, N > Zero;
 	static const Matrix< T, M, N > One;
 	static const Matrix< T, M, N > Identity;
@@ -942,8 +1030,304 @@ struct Matrix : public IMatrix< T, M, N >
 
 template < typename T, size_t M, size_t N > const Matrix< T, M, N > Matrix< T, M, N >::Zero = Matrix< T, M, N >( 0 );
 template < typename T, size_t M, size_t N > const Matrix< T, M, N > Matrix< T, M, N >::One  = Matrix< T, M, N >( 1 );
-template < typename T, size_t M, size_t N > const Matrix< T, M, N > Matrix< T, M, N >::Identity;
+template < typename T, size_t M, size_t N > const Matrix< T, M, N > Matrix< T, M, N >::Identity = []()
+{ 
+	Matrix< T, M, N > Result( 0 );
+	auto& Diagonal = Result.diagonal;
 
+	for ( int i = 0; i < Diagonal.GetDimensions(); ++i )
+	{
+		Diagonal[ i ] = static_cast< T >( 1 );
+	}
+
+	return Result;
+}();
+
+template < typename T >
+struct Matrix< T, 2 > : IMatrix< T, 2 >
+{
+	union
+	{
+		T Data[ 4 ];
+
+		struct
+		{
+			T x0; T y0;
+			T x1; T y1;
+		};
+
+		IVector< T, 2, 3 > diagonal;
+		Swizzler< T, 0, 2, 1, 3 > transverse;
+
+		IVector< T, 2, 1 > r0;
+		
+		struct
+		{
+			T x0; T y0;
+			IVector< T, 2, 1 > r1;
+		};
+
+		IVector< T, 2, 2 > c0;
+		
+		struct
+		{
+			T x0;
+			IVector< T, 2, 2 > c1;
+		};
+	};
+
+	Matrix() = default;
+
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
+	Matrix( U a_Scalar )
+	{
+		for ( size_t i = 0; i < 4; ++i )
+		{
+			Data[ i ] = static_cast< T >( a_Scalar );
+		}
+	}
+
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
+	Matrix( initializer_list< U > && a_InitializerList )
+	{
+		size_t Size = 4 < a_InitializerList.size() ? 4 : a_InitializerList.size();
+		auto Begin = a_InitializerList.begin();
+
+		for ( size_t i = 0; i < Size; ++i, ++Begin )
+		{
+			Data[ i ] = static_cast< T >( *Begin );
+		}
+	}
+
+	static const Matrix< T, 2 > Zero;
+	static const Matrix< T, 2 > One;
+	static const Matrix< T, 2 > Identity;
+};
+
+template < typename T > const Matrix< T, 2 > Matrix< T, 2 >::Zero = Matrix< T, 2 >( 0 );
+template < typename T > const Matrix< T, 2 > Matrix< T, 2 >::One  = Matrix< T, 2 >( 1 );
+template < typename T > const Matrix< T, 2 > Matrix< T, 2 >::Identity = []()
+{
+	Matrix< T, 2 > Result( 0 );
+	auto& Diagonal = Result.diagonal;
+
+	for ( int i = 0; i < 2; ++i )
+	{
+		Diagonal[ i ] = static_cast< T >( 1 );
+	}
+
+	return Result;
+}( );
+
+template < typename T >
+struct Matrix< T, 3 > : IMatrix< T, 3 >
+{
+	union
+	{
+		T Data[ 9 ];
+
+		struct
+		{
+			T x0; T y0; T z0;
+			T x1; T y1; T z1;
+			T x2; T y2; T z2;
+		};
+
+		IVector< T, 3, 4 > diagonal;
+		Swizzler< T, 0, 3, 6, 1, 4, 7, 2, 5, 8 > transverse;
+
+		IVector< T, 3, 1 > r0;
+
+		struct
+		{
+			T x0; T y0; T z0;
+			IVector< T, 3, 1 > r1;
+		};
+
+		struct
+		{
+			T x0; T y0; T z0;
+			T x1; T y1; T z1;
+			IVector< T, 3, 1 > r2;
+		};
+
+		IVector< T, 3, 3 > c0;
+
+		struct
+		{
+			T x0;
+			IVector< T, 3, 3 > c1;
+		};
+
+		struct
+		{
+			T x0; T y0;
+			IVector< T, 3, 3 > c2;
+		};
+	};
+
+	Matrix() = default;
+
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
+	Matrix( U a_Scalar )
+	{
+		for ( size_t i = 0; i < 9; ++i )
+		{
+			Data[ i ] = static_cast< T >( a_Scalar );
+		}
+	}
+
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
+	Matrix( initializer_list< U >&& a_InitializerList )
+	{
+		size_t Size = 9 < a_InitializerList.size() ? 9 : a_InitializerList.size();
+		auto Begin = a_InitializerList.begin();
+
+		for ( size_t i = 0; i < Size; ++i, ++Begin )
+		{
+			Data[ i ] = static_cast< T >( *Begin );
+		}
+	}
+
+	static const Matrix< T, 3 > Zero;
+	static const Matrix< T, 3 > One;
+	static const Matrix< T, 3 > Identity;
+};
+
+template < typename T > const Matrix< T, 3 > Matrix< T, 3 >::Zero = Matrix< T, 3 >( 0 );
+template < typename T > const Matrix< T, 3 > Matrix< T, 3 >::One  = Matrix< T, 3 >( 1 );
+template < typename T > const Matrix< T, 3 > Matrix< T, 3 >::Identity = []()
+{
+	Matrix< T, 3 > Result( 0 );
+	auto& Diagonal = Result.diagonal;
+
+	for ( int i = 0; i < 3; ++i )
+	{
+		Diagonal[ i ] = static_cast< T >( 1 );
+	}
+
+	return Result;
+}( );
+
+
+template < typename T >
+struct Matrix< T, 4 > : IMatrix< T, 4 >
+{
+	union
+	{
+		T Data[ 16 ];
+
+		struct
+		{
+			T x0; T y0; T z0; T w0;
+			T x1; T y1; T z1; T w1;
+			T x2; T y2; T z2; T w2;
+			T x3; T y3; T z3; T w3;
+		};
+
+		IVector< T, 4, 5 > diagonal;
+		Swizzler< T, 0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15 > transverse;
+
+		IVector< T, 4, 1 > r0;
+
+		struct
+		{
+			T x0; T y0; T z0; T w0;
+			IVector< T, 4, 1 > r1;
+		};
+
+		struct
+		{
+			T x0; T y0; T z0; T w0;
+			T x1; T y1; T z1; T w1;
+			IVector< T, 4, 1 > r2;
+		};
+
+		struct
+		{
+			T x0; T y0; T z0; T w0;
+			T x1; T y1; T z1; T w1;
+			T x2; T y2; T z2; T w2;
+			IVector< T, 4, 1 > r3;
+		};
+
+		IVector< T, 4, 4 > c0;
+
+		struct
+		{
+			T x0;
+			IVector< T, 4, 4 > c1;
+		};
+
+		struct
+		{
+			T x0; T y0;
+			IVector< T, 4, 4 > c2;
+		};
+
+		struct
+		{
+			T x0; T y0; T z0;
+			IVector< T, 4, 4 > c3;
+		};
+	};
+
+	Matrix() = default;
+
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
+	Matrix( U a_Scalar )
+	{
+		for ( size_t i = 0; i < 16; ++i )
+		{
+			Data[ i ] = static_cast< T >( a_Scalar );
+		}
+	}
+
+	template < typename U >
+	Matrix( U a_X0, U a_Y0, U a_Z0, U a_W0, U a_X1, U a_Y1, U a_Z1, U a_W1, U a_X2, U a_Y2, U a_Z2, U a_W2, U a_X3, U a_Y3, U a_Z3, U a_W3 )
+		: x0( static_cast< T >( a_X0 ) )
+	{
+
+	}
+
+	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
+	Matrix( initializer_list< U >&& a_InitializerList )
+	{
+		size_t Size = 16 < a_InitializerList.size() ? 16 : a_InitializerList.size();
+		auto Begin = a_InitializerList.begin();
+
+		for ( size_t i = 0; i < Size; ++i, ++Begin )
+		{
+			Data[ i ] = static_cast< T >( *Begin );
+		}
+	}
+
+	static const Matrix< T, 4 > Zero;
+	static const Matrix< T, 4 > One;
+	static const Matrix< T, 4 > Identity;
+};
+
+template < typename T > const Matrix< T, 4 > Matrix< T, 4 >::Zero = Matrix< T, 4 >( 0 );
+template < typename T > const Matrix< T, 4 > Matrix< T, 4 >::One  = Matrix< T, 4 >( 1 );
+template < typename T > const Matrix< T, 4 > Matrix< T, 4 >::Identity = []()
+{
+	Matrix< T, 4 > Result( 0 );
+	auto& Diagonal = Result.diagonal;
+
+	for ( int i = 0; i < 4; ++i )
+	{
+		Diagonal[ i ] = static_cast< T >( 1 );
+	}
+
+	return Result;
+}( );
+
+typedef Matrix< float, 2 > Matrix2;
+typedef Matrix< float, 3 > Matrix3;
+typedef Matrix< float, 4 > Matrix4;
+typedef Matrix< int, 2 > Matrix2Int;
+typedef Matrix< int, 3 > Matrix3Int;
+typedef Matrix< int, 4 > Matrix4Int;
 
 class Math
 {
