@@ -56,7 +56,7 @@ struct IVector
 			operator[]( i ) += static_cast< T >( a_Indexable[ i ] );
 		}
 
-		return *this;
+		return reinterpret_cast< Vector< T, S >& >( *this );
 	}
 
 	template < typename U, size_t I >
@@ -80,7 +80,7 @@ struct IVector
 			operator[]( i ) -= static_cast< T >( a_Indexable[ i ] );
 		}
 
-		return *this;
+		return reinterpret_cast< Vector< T, S >& >( *this );
 	}
 
 	template < typename U, size_t I >
@@ -104,7 +104,7 @@ struct IVector
 			operator[]( i ) *= static_cast< T >( a_Indexable[ i ] );
 		}
 
-		return *this;
+		return reinterpret_cast< Vector< T, S >& >( *this );
 	}
 
 	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
@@ -128,7 +128,7 @@ struct IVector
 			operator[]( i ) *= static_cast< T >( a_Scalar );
 		}
 
-		return *this;
+		return reinterpret_cast< Vector< T, S >& >( *this );
 	}
 
 	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
@@ -155,7 +155,7 @@ struct IVector
 			operator[]( i ) *= Scalar;
 		}
 
-		return *this;
+		return reinterpret_cast< Vector< T, S >& >( *this );
 	}
 
 	constexpr size_t GetDimensions() const
@@ -1087,6 +1087,14 @@ struct Matrix< T, 2 > : IMatrix< T, 2 >
 		}
 	}
 
+	template < typename U >
+	Matrix( U a_X0, U a_Y0, U a_X1, U a_Y1 )
+		: x0( static_cast< T >( a_X0 ) )
+		, y0( static_cast< T >( a_Y0 ) )
+		, x1( static_cast< T >( a_X1 ) )
+		, y1( static_cast< T >( a_Y1 ) )
+	{ }
+
 	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
 	Matrix( initializer_list< U > && a_InitializerList )
 	{
@@ -1176,6 +1184,19 @@ struct Matrix< T, 3 > : IMatrix< T, 3 >
 			Data[ i ] = static_cast< T >( a_Scalar );
 		}
 	}
+
+	template < typename U >
+	Matrix( U a_X0, U a_Y0, U a_Z0, U a_X1, U a_Y1, U a_Z1, U a_X2, U a_Y2, U a_Z2 )
+		: x0( static_cast< T >( a_X0 ) )
+		, y0( static_cast< T >( a_Y0 ) )
+		, z0( static_cast< T >( a_Z0 ) )
+		, x1( static_cast< T >( a_X1 ) )
+		, y1( static_cast< T >( a_Y1 ) )
+		, z1( static_cast< T >( a_Z1 ) )
+		, x2( static_cast< T >( a_X2 ) )
+		, y2( static_cast< T >( a_Y2 ) )
+		, z2( static_cast< T >( a_Z2 ) )
+	{ }
 
 	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
 	Matrix( initializer_list< U >&& a_InitializerList )
@@ -1286,9 +1307,22 @@ struct Matrix< T, 4 > : IMatrix< T, 4 >
 	template < typename U >
 	Matrix( U a_X0, U a_Y0, U a_Z0, U a_W0, U a_X1, U a_Y1, U a_Z1, U a_W1, U a_X2, U a_Y2, U a_Z2, U a_W2, U a_X3, U a_Y3, U a_Z3, U a_W3 )
 		: x0( static_cast< T >( a_X0 ) )
-	{
-
-	}
+		, y0( static_cast< T >( a_Y0 ) )
+		, z0( static_cast< T >( a_Z0 ) )
+		, w0( static_cast< T >( a_W0 ) )
+		, x1( static_cast< T >( a_X1 ) )
+		, y1( static_cast< T >( a_Y1 ) )
+		, z1( static_cast< T >( a_Z1 ) )
+		, w1( static_cast< T >( a_W1 ) )
+		, x2( static_cast< T >( a_X2 ) )
+		, y2( static_cast< T >( a_Y2 ) )
+		, z2( static_cast< T >( a_Z2 ) )
+		, w2( static_cast< T >( a_W2 ) )
+		, x3( static_cast< T >( a_X3 ) )
+		, y3( static_cast< T >( a_Y3 ) )
+		, z3( static_cast< T >( a_Z3 ) )
+		, w3( static_cast< T >( a_W3 ) )
+	{ }
 
 	template < typename U, typename = typename enable_if_t< is_arithmetic_v< U > > >
 	Matrix( initializer_list< U >&& a_InitializerList )
@@ -1401,11 +1435,23 @@ public:
 		return a_VectorA * a_VectorB;
 	}
 
-	//template < typename T1, typename T2, size_t X, size_t Y, size_t Z >
-	//static Matrix< T1, Z, Y > Multiply( const Matrix< T1, X, Y >& a_MatrixA, const Matrix< T2, Z, X >& a_MatrixB )
-	//{
-	//	//Matrix< T, Z, X > Result;
+	template < typename T1, typename T2, size_t M, size_t N0, size_t N1 >
+	static Matrix< T1, N0, N1 > Multiply( const Matrix< T1, M, N0 >& a_MatrixA, const Matrix< T2, N0, N1 >& a_MatrixB )
+	{
+		Matrix< T1, N0, N1 > Result;
+
+		for ( size_t m = 0; m < N0; ++m )
+		{
+			auto& Row = Result.GetRow( m );
+
+			for ( size_t n = 0; n < N1; ++n )
+			{
+				Row[ n ] = Manhatten( a_MatrixA.GetRow( m ) * a_MatrixB.GetCol( n ) );
+			}
+		}
+
+		return Result;
+	}
 
 
-	//}
 };
