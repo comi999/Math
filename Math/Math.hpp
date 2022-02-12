@@ -2,113 +2,8 @@
 #include <tuple>
 
 using namespace std;
- 
-template < typename _Indexable >
-struct Indexable
-{
-	inline auto& operator[]( size_t a_Index )
-	{
-		return reinterpret_cast< _Indexable& >( *this )[ a_Index ];
-	}
 
-	inline const auto& operator[]( size_t a_Index ) const
-	{
-		return reinterpret_cast< const _Indexable& >( *this )[ a_Index ];
-	}
-};
 
-template < typename T, size_t Span, size_t Increment = 1  >
-struct Indexer : public Indexable< Indexer< T, Span, Increment > >
-{
-	typedef typename T ValueType;
-	static constexpr size_t Span = Span;
-	static constexpr size_t Increment = Increment;
-
-	inline auto& operator[]( size_t a_Index )
-	{
-		return reinterpret_cast< ValueType* >( this )[ a_Index * Increment ];
-	}
-
-	inline const auto& operator[]( size_t a_Index ) const
-	{
-		return reinterpret_cast< const ValueType* >( this )[ a_Index * Increment ];
-	}
-};
-
-template < typename _Indexer, size_t Skip, size_t Span, size_t Increment = 1 >
-struct SkipIndexer : public Indexable< SkipIndexer< _Indexer, Skip, Span, Increment > >
-{
-	typedef typename _Indexer::ValueType ValueType;
-	static constexpr size_t Skip = Skip;
-	static constexpr size_t Span = Span;
-	static constexpr size_t Increment = Increment;
-
-	inline auto& operator[]( size_t a_Index )
-	{
-		size_t Offset = ( a_Index + ( a_Index >= Skip ? 1 : 0 ) ) * Increment;
-		return reinterpret_cast< _Indexer* >( this )->operator[]( Offset );
-	}
-
-	inline const auto& operator[]( size_t a_Index ) const
-	{
-		size_t Offset = ( a_Index + ( a_Index >= Skip ? 1 : 0 ) ) * Increment;
-		return reinterpret_cast< _Indexer* >( this )->operator[]( Offset );
-	}
-};
-
-template < typename _IndexerM, typename _IndexerN, size_t SkipM, size_t SkipN >
-struct SubMatrix
-{
-	static constexpr size_t SizeM = _IndexerM::Span - 1;
-	static constexpr size_t SizeN = _IndexerN::Span - 1;
-	typedef SkipIndexer< _IndexerM, SkipM, SizeM > IndexerM;
-	typedef SkipIndexer< _IndexerN, SkipN, SizeN > IndexerN;
-
-	inline auto& GetRow( size_t a_Index )
-	{
-		return reinterpret_cast< IndexerN& >( reinterpret_cast< IndexerM& >( *this )[ a_Index ] );
-	}
-
-	inline const auto& GetRow( size_t a_Index ) const
-	{
-		return reinterpret_cast< IndexerN& >( reinterpret_cast< IndexerM& >( *this )[ a_Index ] );
-	}
-
-	inline auto& GetCol( size_t a_Index )
-	{
-		return reinterpret_cast< IndexerM& >( reinterpret_cast< IndexerN& >( *this )[ a_Index ] );
-	}
-
-	inline const auto& GetCol( size_t a_Index ) const
-	{
-		return reinterpret_cast< IndexerM& >( reinterpret_cast< IndexerN& >( *this )[ a_Index ] );
-	}
-
-	template < size_t _SkipM, size_t _SkipN >
-	inline auto& GetSubMatrix()
-	{
-		return reinterpret_cast< SubMatrix< IndexerM, IndexerN, _SkipM, _SkipN >& >( *this );
-	}
-
-	template < size_t _SkipM, size_t _SkipN >
-	inline const auto& GetSubMatrix() const
-	{
-		return reinterpret_cast< const SubMatrix< IndexerM, IndexerN, _SkipM, _SkipN >& >( *this );
-	}
-
-	template < size_t Col = 0 >
-	inline typename _IndexerM::ValueType Determinant()
-	{
-		int Coeff = ( static_cast< int >( Col ) % 2 == 0 ? 1 : -1 ) * GetRow( 0 )[ Col ];
-		return Coeff * GetSubMatrix< 0, Col >().Determinant() + Determinant< Col + 1 >();
-	}
-
-	template <>
-	inline typename _IndexerM::ValueType Determinant< SizeN >()
-	{
-		return 0;
-	}
-};
 
 
 
@@ -241,7 +136,7 @@ struct IVector
 
 		for ( int i = 0; i < S; ++i )
 		{
-			Result[ i ] *= static_cast< T >( a_Scalar );
+			Result[ i ] = operator[]( i ) * static_cast< T >( a_Scalar );
 		}
 
 		return Result;
@@ -266,7 +161,7 @@ struct IVector
 
 		for ( int i = 0; i < S; ++i )
 		{
-			Result[ i ] *= Scalar;
+			Result[ i ] = operator[]( i ) * Scalar;
 		}
 
 		return Result;
@@ -1184,7 +1079,7 @@ struct Matrix< T, 2 > : IMatrix< T, 2 >
 		};
 
 		IVector< T, 2, 3 > diagonal;
-		Swizzler< T, 0, 2, 1, 3 > transverse;
+		Swizzler< T, 0, 2, 1, 3 > transpose;
 
 		IVector< T, 2, 1 > r0;
 		
@@ -1269,7 +1164,7 @@ struct Matrix< T, 3 > : IMatrix< T, 3 >
 		};
 
 		IVector< T, 3, 4 > diagonal;
-		Swizzler< T, 0, 3, 6, 1, 4, 7, 2, 5, 8 > transverse;
+		Swizzler< T, 0, 3, 6, 1, 4, 7, 2, 5, 8 > transpose;
 
 		IVector< T, 3, 1 > r0;
 
@@ -1465,14 +1360,6 @@ struct Matrix< T, 4 > : IMatrix< T, 4 >
 	static const Matrix< T, 4 > Zero;
 	static const Matrix< T, 4 > One;
 	static const Matrix< T, 4 > Identity;
-
-	template < size_t AxisM, size_t AxisN >
-	inline const auto& GetSubMatrix()
-	{
-		typedef SubMatrix< Indexer< T, 4, 4 >, Indexer< T, 4, 1 >, AxisM, AxisN > SubMat;
-		SubMat& This = reinterpret_cast< SubMat& >( *this );
-		return This;
-	}
 };
 
 template < typename T > const Matrix< T, 4 > Matrix< T, 4 >::Zero = Matrix< T, 4 >( 0 );
@@ -1496,8 +1383,6 @@ typedef Matrix< float, 4 > Matrix4;
 typedef Matrix< int, 2 > Matrix2Int;
 typedef Matrix< int, 3 > Matrix3Int;
 typedef Matrix< int, 4 > Matrix4Int;
-
-
 
 class Math
 {
@@ -1588,10 +1473,200 @@ public:
 
 		return Result;
 	}
+	
+	template < typename T, size_t S >
+	inline static Matrix< T, S > Minor( const Matrix< T, S >& a_Matrix )
+	{
+		return reinterpret_cast< const MatrixIndexer< Indexer< T, S, S >, Indexer< T, S > >& >( a_Matrix ).Minor();
+	}
+
+	template < typename T, size_t M, size_t N >
+	static Matrix< T, N, M > Transpose( const Matrix< T, M, N >& a_Matrix )
+	{
+		Matrix< T, N, M > Result;
+
+		for ( int m = 0; m < M; ++m )
+		{
+			Result.GetCol( m ) = a_Matrix.GetRow( m );
+		}
+
+		return Result;
+	}
 
 	template < typename T, size_t S >
-	static T Determinant( const Matrix< T, S, S >& a_Matrix )
+	static inline T Determinant( const Matrix< T, S, S >& a_Matrix )
 	{
-		return reinterpret_cast< const SubMatrix< Indexer< T, S, S >, Indexer< T, S >, 1, 1 >& >( a_Matrix ).Determinant();
+		return reinterpret_cast< const MatrixIndexer< Indexer< T, 4, 4 >, Indexer< T, 4 > >& >( a_Matrix ).Determinant();
 	}
+
+	template < typename T, size_t M, size_t N >
+	static Matrix< T, M, N > Cofactor( Matrix< T, M, N > a_Matrix )
+	{
+		size_t Begin = 1;
+
+		for ( size_t m = 0; m < M; ++m )
+		{
+			auto& Row = a_Matrix.GetRow( m );
+
+			for ( size_t n = Begin; n < N; n += 2 )
+			{
+				Row[ n ] *= static_cast< T >( -1 );
+			}
+
+			Begin = !Begin;
+		}
+
+		return a_Matrix;
+	}
+
+	template < typename T, size_t M, size_t N >
+	inline static Matrix< T, M, N > Adjoint( const Matrix< T, M, N >& a_Matrix )
+	{
+		return Transpose( Cofactor( a_Matrix ) );
+	}
+
+	template < typename T, size_t S >
+	static Vector< T, S > Inverse( const Vector< T, S >& a_Vector )
+	{
+		return a_Vector * static_cast< T >( -1 );
+	}
+
+	template < typename T, size_t S >
+	static Matrix< T, S > Inverse( const Matrix< T, S >& a_Matrix )
+	{
+		T Det = Determinant( a_Matrix );
+
+		if ( Det == static_cast< T >( 0 ) )
+		{
+			return Matrix< T, S >::Zero;
+		}
+
+		return reinterpret_cast< Matrix< T, S >&& >( Adjoint( Minor( a_Matrix ) ) * ( 1.0f / Det ) );
+	}
+
+private:
+
+	template < typename T, size_t Span, size_t Increment = 1  >
+	struct Indexer
+	{
+		typedef typename T ValueType;
+		static constexpr size_t Span = Span;
+
+		inline auto& operator[]( size_t a_Index )
+		{
+			return reinterpret_cast< ValueType* >( this )[ a_Index * Increment ];
+		}
+
+		inline constexpr auto& operator[]( size_t a_Index ) const
+		{
+			return reinterpret_cast< const ValueType* >( this )[ a_Index * Increment ];
+		}
+	};
+
+	template < typename _Indexer, size_t Skip, size_t Span >
+	struct SkipIndexer
+	{
+		typedef typename _Indexer::ValueType ValueType;
+		static constexpr size_t Span = Span;
+
+		inline auto& operator[]( size_t a_Index )
+		{
+			size_t Offset = a_Index + ( a_Index >= Skip ? 1 : 0 );
+			return reinterpret_cast< _Indexer* >( this )->operator[]( Offset );
+		}
+
+		inline constexpr auto& operator[]( size_t a_Index ) const
+		{
+			size_t Offset = a_Index + ( a_Index >= Skip ? 1 : 0 );
+			return reinterpret_cast< const _Indexer* >( this )->operator[]( Offset );
+		}
+	};
+
+	template < typename _IndexerM, typename _IndexerN >
+	struct MatrixIndexer
+	{
+		static constexpr size_t SizeM = _IndexerM::Span;
+		static constexpr size_t SizeN = _IndexerN::Span;
+
+		inline auto& GetRow( size_t a_Index )
+		{
+			return reinterpret_cast< _IndexerN& >( reinterpret_cast< _IndexerM& >( *this )[ a_Index ] );
+		}
+
+		inline constexpr auto& GetRow( size_t a_Index ) const
+		{
+			return reinterpret_cast< const _IndexerN& >( reinterpret_cast< const _IndexerM& >( *this )[ a_Index ] );
+		}
+
+		inline auto& GetCol( size_t a_Index )
+		{
+			return reinterpret_cast< _IndexerM& >( reinterpret_cast< _IndexerN& >( *this )[ a_Index ] );
+		}
+
+		inline constexpr auto& GetCol( size_t a_Index ) const
+		{
+			return reinterpret_cast< const _IndexerM& >( reinterpret_cast< const _IndexerN& >( *this )[ a_Index ] );
+		}
+
+		template < size_t _SkipM, size_t _SkipN >
+		inline auto& GetSubMatrixIndexer()
+		{
+			typedef SkipIndexer< _IndexerM, _SkipM, SizeM - 1 > SubMatrixIndexerM;
+			typedef SkipIndexer< _IndexerN, _SkipN, SizeN - 1 > SubMatrixIndexerN;
+
+			return reinterpret_cast< MatrixIndexer< SubMatrixIndexerM, SubMatrixIndexerN >& >( *this );
+		}
+
+		template < size_t _SkipM, size_t _SkipN >
+		inline constexpr auto& GetSubMatrixIndexer() const
+		{
+			typedef SkipIndexer< _IndexerM, _SkipM, SizeM - 1 > SubMatrixIndexerM;
+			typedef SkipIndexer< _IndexerN, _SkipN, SizeN - 1 > SubMatrixIndexerN;
+
+			return reinterpret_cast< const MatrixIndexer< SubMatrixIndexerM, SubMatrixIndexerN >& >( *this );
+		}
+
+		auto& Minor() const
+		{
+			 Matrix< typename _IndexerM::ValueType, SizeM > Result;
+			 Minor< 0, 0 >( Result );
+			 return Result;
+		}
+
+		template < size_t Row, size_t Col >
+		void Minor( Matrix< typename _IndexerM::ValueType, SizeM >& a_Result ) const
+		{
+			a_Result.GetRow( Row )[ Col ] = GetSubMatrixIndexer< Row, Col >().Determinant();
+
+			if constexpr ( Col == SizeN - 1 )
+			{
+				if constexpr ( Row < SizeM )
+				{
+					Minor< Row + 1, 0 >( a_Result );
+				}
+			}
+			else
+			{
+				Minor< Row, Col + 1 >( a_Result );
+			}
+		}
+
+		template < size_t Col = 0 >
+		inline typename _IndexerM::ValueType Determinant() const
+		{
+			if constexpr ( SizeM == 1 )
+			{
+				return GetRow( 0 )[ 0 ];
+			}
+
+			typename _IndexerM::ValueType Coeff = ( ( static_cast< int >( Col ) % 2 ) == 0 ? 1 : -1 ) * GetRow( 0 )[ Col ];
+			return Coeff * GetSubMatrixIndexer< 0, Col >().Determinant() + Determinant< Col + 1 >();
+		}
+
+		template <>
+		inline typename _IndexerM::ValueType Determinant< SizeN >() const
+		{
+			return 0;
+		}
+	};
 };
