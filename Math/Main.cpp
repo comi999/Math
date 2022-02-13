@@ -19,4 +19,11 @@ int main()
 	auto vec1 = Math::Normalize( Vector2( 1, 1 ) );
 
 	auto vec2 = Math::Refract( Vector2( 1, -1 ), Vector2( 0, -1 ), 1.0f );
+
+	auto mat = Matrix4::CreateRotationX( Math::Pi< float >() );
+	Matrix4::RotateX( mat, -Math::Pi< float >() );
+	Matrix4::Scale( mat, Vector3::One * 2 );
+	Matrix4::Scale( mat, Vector3::One * 0.5f );
+
+	auto something = Matrix4::CreateTransform( Vector3::One, Vector3::One, Vector3::One );
 }

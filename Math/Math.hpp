@@ -3,11 +3,23 @@
 
 using namespace std;
 
+struct Math;
+
 template < typename T, size_t S >
 struct Vector;
 
 template < typename T, size_t M, size_t N >
 struct Matrix;
+
+enum class RotationOrder
+{
+	XYZ,
+	XZY,
+	YXZ,
+	YZX,
+	ZXY,
+	ZYX
+};
 
 template < typename T, size_t S, size_t Increment = 1 >
 struct IVector
@@ -25,10 +37,8 @@ struct IVector
 	template < typename U, size_t I >
 	IVector< T, S, Increment >& operator=( const IVector< U, S, I >& a_IVector )
 	{
-		for ( int i = 0; i < S; ++i )
+		for ( size_t i = 0; i < S; ++i )
 		{
-			T& a = operator[]( i );
-			T b = a_IVector[ i ];
 			operator[]( i ) = a_IVector[ i ];
 		}
 
@@ -1210,6 +1220,74 @@ struct Matrix< T, 3 > : IMatrix< T, 3 >
 		}
 	}
 
+	template < typename U >
+	inline static Matrix< T, 3 > CreateTranslation( const Vector< U, 2 >& a_Vector )
+	{
+		return Matrix< T, 3 >(
+			static_cast< T >( 1 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 1 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( a_Vector.x ),
+			static_cast< T >( a_Vector.y ),
+			static_cast< T >( 1 ) );
+	}
+
+	template < typename U, typename V >
+	inline static void Translate( Matrix< U, 3 >& a_Matrix, const Vector< V, 2 >& a_Vector )
+	{
+		a_Matrix.x2 += static_cast< U >( a_Vector.x );
+		a_Matrix.y2 += static_cast< U >( a_Vector.y );
+	}
+
+	template < typename U >
+	static Matrix< T, 3 > CreateRotation( U a_Radians )
+	{
+		U C = Math::Cos( a_Radians );
+		U S = Math::Sin( a_Radians );
+
+		return Matrix< T, 3 >(
+			static_cast< T >( C ),
+			static_cast< T >( -S ),
+			static_cast< T >( 0 ),
+			static_cast< T >( S ),
+			static_cast< T >( C ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 1 ) );
+	}
+
+	template < typename U, typename V >
+	inline static void Rotate( Matrix< U, 3 >& a_Matrix, V a_Radians )
+	{
+		a_Matrix = Math::Multiply( CreateRotation( a_Radians ), a_Matrix );
+	}
+
+	template < typename U >
+	inline static Matrix< T, 3 > CreateScale( const Vector< U, 2 >& a_Vector )
+	{
+		return Matrix< T, 3 >(
+			static_cast< T >( a_Vector.x ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( a_Vector.y ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 1 ) );
+	}
+
+	template < typename U, typename V >
+	inline static void Scale( Matrix< U, 3 >& a_Matrix, const Vector< V, 2 >& a_Vector )
+	{
+		a_Matrix.x0 *= static_cast< U >( a_Vector.x );
+		a_Matrix.y1 *= static_cast< U >( a_Vector.y );
+	}
+
 	static const Matrix< T, 3 > Zero;
 	static const Matrix< T, 3 > One;
 	static const Matrix< T, 3 > Identity;
@@ -1231,7 +1309,7 @@ template < typename T > const Matrix< T, 3 > Matrix< T, 3 >::Identity = []()
 }( );
 
 template < typename T >
-struct Matrix< T, 4 > : IMatrix< T, 4 >
+struct Matrix< T, 4 > : public IMatrix< T, 4 >
 {
 	union
 	{
@@ -1333,6 +1411,165 @@ struct Matrix< T, 4 > : IMatrix< T, 4 >
 		{
 			Data[ i ] = static_cast< T >( *Begin );
 		}
+	}
+
+	template < typename U >
+	inline static Matrix< T, 4 > CreateTranslation( const Vector< U, 3 >& a_Vector )
+	{
+		return Matrix< T, 4 >(
+			static_cast< T >( 1 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 1 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 1 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( a_Vector.x ),
+			static_cast< T >( a_Vector.y ),
+			static_cast< T >( a_Vector.z ),
+			static_cast< T >( 1 ) );
+	}
+
+	template < typename U, typename V >
+	inline static void Translate( Matrix< U, 4 >& a_Matrix, const Vector< V, 3 >& a_Vector )
+	{
+		a_Matrix.x3 += static_cast< U >( a_Vector.x );
+		a_Matrix.y3 += static_cast< U >( a_Vector.y );
+		a_Matrix.z3 += static_cast< U >( a_Vector.z );
+	}
+
+	template < typename U >
+	static Matrix< T, 4 > CreateRotationX( U a_Radians )
+	{
+		U C = Math::Cos( a_Radians );
+		U S = Math::Sin( a_Radians );
+
+		return Matrix< T, 4 >( 
+			static_cast< T >( 1 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( C ),
+			static_cast< T >( -S ),
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( S ),
+			static_cast< T >( C ),
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( 1 ) );
+	}
+
+	template < typename U >
+	static Matrix< T, 4 > CreateRotationY( U a_Radians )
+	{
+		U C = Math::Cos( a_Radians );
+		U S = Math::Sin( a_Radians );
+
+		return Matrix< T, 4 >(
+			static_cast< T >( C ),
+			static_cast< T >( 0 ),
+			static_cast< T >( S ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 1 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( -S ),
+			static_cast< T >( 0 ),
+			static_cast< T >( C ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 1 ) );
+	}
+
+	template < typename U >
+	static Matrix< T, 4 > CreateRotationZ( U a_Radians )
+	{
+		U C = Math::Cos( a_Radians );
+		U S = Math::Sin( a_Radians );
+
+		return Matrix< T, 4 >(
+			static_cast< T >( C ),
+			static_cast< T >( -S ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( S ),
+			static_cast< T >( C ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 1 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 1 ) );
+	}
+
+	template < typename U, typename V >
+	inline static void RotateX( Matrix< U, 4 >& a_Matrix, V a_Radians )
+	{
+		a_Matrix = Math::Multiply( CreateRotationX( a_Radians ), a_Matrix );
+	}
+
+	template < typename U, typename V >
+	inline static void RotateY( Matrix< U, 4 >& a_Matrix, V a_Radians )
+	{
+		a_Matrix = Math::Multiply( CreateRotationY( a_Radians ), a_Matrix );
+	}
+
+	template < typename U, typename V >
+	inline static void RotateZ( Matrix< U, 4 >& a_Matrix, V a_Radians )
+	{
+		a_Matrix = Math::Multiply( CreateRotationZ( a_Radians ), a_Matrix );
+	}
+
+	template < typename U >
+	inline static Matrix< T, 4 > CreateScale( const Vector< U, 3 >& a_Vector )
+	{
+		return Matrix< T, 4 >(
+			static_cast< T >( a_Vector.x ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( a_Vector.y ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( a_Vector.z ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 0 ),
+			static_cast< T >( 1 ) );
+	}
+
+	template < typename U, typename V >
+	inline static void Scale( Matrix< U, 4 >& a_Matrix, const Vector< V, 3 >& a_Vector )
+	{
+		a_Matrix.x0 *= static_cast< U >( a_Vector.x );
+		a_Matrix.y1 *= static_cast< U >( a_Vector.y );
+		a_Matrix.z2 *= static_cast< U >( a_Vector.z );
+	}
+
+	template < typename U, typename V, typename W >
+	inline static Matrix< T, 4 > CreateTransform( const Vector< U, 3 >& a_Translate, const Vector< V, 3 >& a_Rotation, const Vector< W, 3 >& a_Scale, RotationOrder = RotationOrder::ZXY )
+	{
+		
 	}
 
 	static const Matrix< T, 4 > Zero;
@@ -1674,18 +1911,18 @@ public:
 	template < typename T >
 	inline static float InverseSqrt( T a_Scalar )
 	{
-		long i;
-		float x2, y;
-		const float threehalfs = 1.5f;
+		long I;
+		float X2, Y;
+		const float Threehalfs = 1.5f;
 
-		x2 = a_Scalar * 0.5f;
-		y = a_Scalar;
-		i = *( long* )&y;
-		i = 0x5f3759df - ( i >> 1 );
-		y = *( float* )&i;
-		y = y * ( threehalfs - ( x2 * y * y ) );
+		X2 = a_Scalar * 0.5f;
+		Y = a_Scalar;
+		I = *( long* )&Y;
+		I = 0x5f3759df - ( I >> 1 );
+		Y = *( float* )&I;
+		Y = Y * ( Threehalfs - ( X2 * Y * Y ) );
 
-		return y;
+		return Y;
 	}
 
 	template < typename T >
