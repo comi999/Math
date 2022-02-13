@@ -1372,6 +1372,48 @@ public:
 		return abs( a_Scalar );
 	}
 
+	template < typename T >
+	inline static T ACos( T a_Scalar )
+	{
+		return acos( a_Scalar );
+	}
+
+	template < typename T >
+	inline static T ACosh( T a_Scalar )
+	{
+		return acosh( a_Scalar );
+	}
+
+	template < typename T >
+	inline static T ASin( T a_Scalar )
+	{
+		return asin( a_Scalar );
+	}
+
+	template < typename T >
+	inline static T ASinh( T a_Scalar )
+	{
+		return asinh( a_Scalar );
+	}
+
+	template < typename T >
+	inline static T ATan( T a_Scalar )
+	{
+		return atan( a_Scalar );
+	}
+
+	template < typename T >
+	inline static T ATan( T a_Y, T a_X )
+	{
+		return atan2( a_Y, a_X );
+	}
+
+	template < typename T >
+	inline static T ATanh( T a_Scalar )
+	{
+		return atanh( a_Scalar );
+	}
+
 	template < typename T, size_t S >
 	inline static Vector< T, S > Abs( Vector< T, S > a_Vector )
 	{
@@ -1486,6 +1528,18 @@ public:
 		return a_Matrix;
 	}
 
+	template < typename T >
+	inline static T Cos( T a_Radians )
+	{
+		return cos( a_Radians );
+	}
+
+	template < typename T >
+	inline static T Cosh( T a_Scalar )
+	{
+		return cosh( a_Scalar );
+	}
+
 	template < typename T0, typename T1 >
 	static auto Cross( const Vector< T0, 3 >& a_VectorA, const Vector< T1, 3 >& a_VectorB )
 	{
@@ -1499,6 +1553,12 @@ public:
 
 		reinterpret_cast< MatrixIndexer< Indexer< T0, 3, 3 >, Indexer< T0, 3 > >& >( Result ).Cross();
 		return Result.GetRow( 0 ).ToVector();
+	}
+
+	template < typename T >
+	inline static T Degrees( T a_Radians )
+	{
+		return static_cast< T >( 180 ) * a_Radians * InversePi< T >();
 	}
 
 	template < typename T, size_t S >
@@ -1527,6 +1587,18 @@ public:
 	}
 	
 	template < typename T >
+	inline static T Exp( T a_Scalar )
+	{
+		return exp( a_Scalar );
+	}
+
+	template < typename T >
+	inline static T Exp2( T a_Scalar )
+	{
+		return exp2( a_Scalar );
+	}
+
+	template < typename T >
 	inline static T Floor( T a_Scalar )
 	{
 		return floor( a_Scalar );
@@ -1553,6 +1625,12 @@ public:
 	inline static Vector< T, S > Fract( const Vector< T, S >& a_Vector )
 	{
 		return a_Vector - Floor( a_Vector );
+	}
+
+	template < typename T >
+	inline static float Inverse( T a_Scalar )
+	{
+		return 1.0f / a_Scalar;
 	}
 
 	template < typename T, size_t S >
@@ -1588,6 +1666,29 @@ public:
 	}
 
 	template < typename T >
+	inline static T InversePi()
+	{
+		return static_cast< T >( 1.0 / 3.14159265358979323846 );
+	}
+
+	template < typename T >
+	inline static float InverseSqrt( T a_Scalar )
+	{
+		long i;
+		float x2, y;
+		const float threehalfs = 1.5f;
+
+		x2 = a_Scalar * 0.5f;
+		y = a_Scalar;
+		i = *( long* )&y;
+		i = 0x5f3759df - ( i >> 1 );
+		y = *( float* )&i;
+		y = y * ( threehalfs - ( x2 * y * y ) );
+
+		return y;
+	}
+
+	template < typename T >
 	inline static bool IsInf( T a_Scalar )
 	{
 		return isinf( a_Scalar );
@@ -1597,6 +1698,18 @@ public:
 	inline static bool IsNan( T a_Scalar )
 	{
 		return isnan( a_Scalar );
+	}
+
+	template < typename T >
+	inline static float Log( T a_Scalar )
+	{
+		return log( a_Scalar );
+	}
+
+	template < typename T >
+	inline static float Log2( T a_Scalar )
+	{
+		return log2( a_Scalar );
 	}
 
 	template < typename T, size_t S >
@@ -1694,6 +1807,44 @@ public:
 		return reinterpret_cast< const MatrixIndexer< Indexer< T, S, S >, Indexer< T, S > >& >( a_Matrix ).Minor();
 	}
 
+	template < typename T, size_t S >
+	inline static Vector< T, S > Normalize( Vector< T, S > a_Vector )
+	{
+		return a_Vector * InverseSqrt( LengthSqrd( a_Vector ) );
+	}
+
+	template < typename T >
+	inline static T Pi()
+	{
+		return static_cast< T >( 3.14159265358979323846 );
+	}
+
+	template < typename T >
+	inline static float Pow( T a_Base, T a_Pow )
+	{
+		return pow( a_Base, a_Pow );
+	}
+
+	template < typename T >
+	inline static T Radians( T a_Degrees )
+	{
+		return Pi< T >() * a_Degrees / static_cast< T >( 180 );
+	}
+
+	template < typename T, size_t S >
+	inline static Vector< T, S > Reflect( const Vector< T, S >& a_Incident, const Vector< T, S >& a_Normal )
+	{
+		return a_Incident - a_Normal * static_cast< T >( 2 ) * Dot( a_Incident, a_Normal );
+	}
+
+	template < typename T, size_t S >
+	static Vector< T, S > Refract( const Vector< T, S >& a_Incident, const Vector< T, S >& a_Normal, T a_Index )
+	{
+		auto NI = Dot( a_Incident, a_Normal );
+		return a_Normal * Math::Sqrt( static_cast< T >( 1 ) - a_Index * a_Index * ( static_cast< T >( 1 ) - NI * NI ) ) +
+			( a_Incident - a_Normal * NI ) * a_Index;
+	}
+
 	template < typename T >
 	inline static T Round( T a_Scalar )
 	{
@@ -1736,13 +1887,25 @@ public:
 	}
 
 	template < typename T >
-	static inline T Sign( T a_Scalar )
+	inline static T Sign( T a_Scalar )
 	{
 		return a_Scalar >= static_cast< T >( 0 ) ? static_cast< T >( 1 ) : static_cast< T >( -1 );
 	}
 
 	template < typename T >
-	static inline T SmoothStep( T a_Scalar, T a_EdgeA, T a_EdgeB )
+	inline static T Sin( T a_Radians )
+	{
+		return sin( a_Radians );
+	}
+
+	template < typename T >
+	inline static T Sinh( T a_Scalar )
+	{
+		return sinh( a_Scalar );
+	}
+
+	template < typename T >
+	inline static T SmoothStep( T a_Scalar, T a_EdgeA, T a_EdgeB )
 	{
 		if ( a_Scalar < a_EdgeA )
 		{
@@ -1758,7 +1921,7 @@ public:
 	}
 
 	template < typename T >
-	static inline T Step( T a_Scalar, T a_Edge )
+	inline static T Step( T a_Scalar, T a_Edge )
 	{
 		if ( a_Scalar < a_Edge )
 		{
@@ -1772,6 +1935,18 @@ public:
 	static float Sqrt( T a_Scalar )
 	{
 		return sqrt( a_Scalar );
+	}
+
+	template < typename T >
+	inline static T Tan( T a_Radians )
+	{
+		return tan( a_Radians );
+	}
+
+	template < typename T >
+	inline static T Tanh( T a_Scalar )
+	{
+		return tanh( a_Scalar );
 	}
 
 	template < typename T, size_t M, size_t N >
@@ -1791,7 +1966,7 @@ public:
 	static inline T Truncate( T a_Scalar, T a_Bound )
 	{
 		a_Bound = Abs( a_Bound );
-		return Clamp( a_Scalae, -a_Bound, a_Bound );
+		return Clamp( a_Scalar, -a_Bound, a_Bound );
 	}
 
 private:
