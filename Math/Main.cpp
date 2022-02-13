@@ -5,10 +5,12 @@ using namespace std;
 
 int main()
 {
-	Matrix< float, 3 > mat = { 3, 0, 2, 2, 0, -2, 0, 1, 1 };
-
-	//auto det = Math::Determinant( mat );
-	auto cof = Math::Cofactor( mat );
-	auto adj = Math::Adjoint( mat );
-	auto inv = Math::Inverse( mat );
+	int mini = 0;
+	int maxi = 10;
+	
+	int res0 = Math::Clamp( -10, mini, maxi );
+	int res1 = Math::Clamp( 20, mini, maxi );
+	int res2 = Math::Clamp( 5, mini, maxi );
+	float val = 0.0f;
+	bool res = Math::IsInf( 1.0f / val );
 }

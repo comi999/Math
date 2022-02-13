@@ -3,28 +3,6 @@
 
 using namespace std;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 template < typename T, size_t S >
 struct Vector;
 
@@ -1389,13 +1367,240 @@ class Math
 public:
 
 	template < typename T >
-	static float Sqrt( T a_Scalar )
+	inline static T Abs( T a_Scalar )
 	{
-		return sqrt( a_Scalar );
+		return abs( a_Scalar );
 	}
 
 	template < typename T, size_t S >
-	static float Length( const Vector< T, S >& a_Vector )
+	inline static Vector< T, S > Abs( Vector< T, S > a_Vector )
+	{
+		for ( size_t i = 0; i < S; ++i )
+		{
+			a_Vector[ i ] = abs( a_Vector[ i ] );
+		}
+
+		return a_Vector;
+	}
+
+	template < typename T, size_t M, size_t N >
+	inline static Matrix< T, M, N > Adjoint( const Matrix< T, M, N >& a_Matrix )
+	{
+		return Transpose( Cofactor( a_Matrix ) );
+	}
+
+	template < typename T >
+	inline static T Ceil( T a_Scalar )
+	{
+		return ceil( a_Scalar );
+	}
+
+	template < typename T, size_t S >
+	inline static Vector< T, S > Ceil( Vector< T, S > a_Vector )
+	{
+		for ( size_t i = 0; i < S; ++i )
+		{
+			a_Vector[ i ] = ceil( a_Vector[ i ] );
+		}
+
+		return a_Vector;
+	}
+
+	template < typename T >
+	inline static T Clamp( T a_Scalar, T a_Min, T a_Max )
+	{
+		if ( a_Scalar < a_Min )
+		{
+			return a_Min;
+		}
+
+		if ( a_Scalar > a_Max )
+		{
+			return a_Max;
+		}
+
+		return a_Scalar;
+	}
+
+	template < typename T, size_t S >
+	inline static Vector< T, S > Clamp( Vector< T, S > a_Vector, T a_Min, T a_Max )
+	{
+		for ( size_t i = 0; i < S; ++i )
+		{
+			T& Value = a_Vector[ i ];
+
+			if ( Value < a_Min )
+			{
+				Value = a_Min;
+			}
+
+			if ( Value > a_Max )
+			{
+				Value = a_Max;
+			}
+		}
+
+		return a_Vector;
+	}
+
+	template < typename T, size_t S >
+	inline static Vector< T, S > Clamp( Vector< T, S > a_Vector, Vector< T, S > a_Min, Vector< T, S > a_Max )
+	{
+		for ( size_t i = 0; i < S; ++i )
+		{
+			T& Value = a_Vector[ i ];
+			T& Min = a_Min[ i ];
+			T& Max = a_Max[ i ];
+
+			if ( Value < Min )
+			{
+				Value = Min;
+			}
+
+			if ( Value > Max )
+			{
+				Value = Max;
+			}
+		}
+
+		return a_Vector;
+	}
+
+	template < typename T, size_t M, size_t N >
+	static Matrix< T, M, N > Cofactor( Matrix< T, M, N > a_Matrix )
+	{
+		size_t Begin = 1;
+
+		for ( size_t m = 0; m < M; ++m )
+		{
+			auto& Row = a_Matrix.GetRow( m );
+
+			for ( size_t n = Begin; n < N; n += 2 )
+			{
+				Row[ n ] *= static_cast< T >( -1 );
+			}
+
+			Begin = !Begin;
+		}
+
+		return a_Matrix;
+	}
+
+	template < typename T0, typename T1 >
+	static auto Cross( const Vector< T0, 3 >& a_VectorA, const Vector< T1, 3 >& a_VectorB )
+	{
+		Matrix< T0, 3 > Result;
+
+		for ( int i = 0; i < 3; ++i )
+		{
+			Result[ i + 3 ] = a_VectorA[ i ];
+			Result[ i + 6 ] = a_VectorB[ i ];
+		}
+
+		reinterpret_cast< MatrixIndexer< Indexer< T0, 3, 3 >, Indexer< T0, 3 > >& >( Result ).Cross();
+		return Result.GetRow( 0 ).ToVector();
+	}
+
+	template < typename T, size_t S >
+	static inline T Determinant( const Matrix< T, S, S >& a_Matrix )
+	{
+		return reinterpret_cast< const MatrixIndexer< Indexer< T, S, S >, Indexer< T, S > >& >( a_Matrix ).Determinant();
+	}
+
+	template < typename T, size_t S >
+	static T Distance( const Vector< T, S >& a_VectorA, const Vector< T, S >& a_VectorB )
+	{
+		return Length( a_VectorB - a_VectorA );
+	}
+
+	template < typename T, size_t S >
+	static T DistanceSqrd( const Vector< T, S >& a_VectorA, const Vector< T, S >& a_VectorB )
+	{
+		return LengthSqrd( a_VectorB - a_VectorA );
+	}
+
+	template < typename T, size_t S >
+	static T Dot( const Vector< T, S >& a_VectorA, const Vector< T, S >& a_VectorB )
+	{
+		Vector< T, S > Multiplied = a_VectorA * a_VectorB;
+		return Manhatten( Multiplied );
+	}
+	
+	template < typename T >
+	inline static T Floor( T a_Scalar )
+	{
+		return floor( a_Scalar );
+	}
+
+	template < typename T, size_t S >
+	inline static Vector< T, S > Floor( Vector< T, S > a_Vector )
+	{
+		for ( size_t i = 0; i < S; ++i )
+		{
+			a_Vector[ i ] = floor( a_Vector[ i ] );
+		}
+
+		return a_Vector;
+	}
+
+	template < typename T >
+	inline static T Fract( T a_Scalar )
+	{
+		return a_Scalar - Floor( a_Scalar );
+	}
+
+	template < typename T, size_t S >
+	inline static Vector< T, S > Fract( const Vector< T, S >& a_Vector )
+	{
+		return a_Vector - Floor( a_Vector );
+	}
+
+	template < typename T, size_t S >
+	static Vector< T, S > Inverse( const Vector< T, S >& a_Vector )
+	{
+		return a_Vector * static_cast< T >( -1 );
+	}
+
+	template < typename T, size_t S >
+	static Matrix< T, S > Inverse( const Matrix< T, S >& a_Matrix )
+	{
+		T Det = static_cast< T >( 0 );
+		auto Min = Math::Minor( a_Matrix );
+		auto& MinRow = Min.GetRow( 0 );
+		auto& MatRow = a_Matrix.GetRow( 0 );
+
+		for ( size_t i = 0; i < S; i += 2 )
+		{
+			Det += MinRow[ i ] * MatRow[ i ];
+		}
+
+		for ( size_t i = 1; i < S; i += 2 )
+		{
+			Det += MinRow[ i ] * MatRow[ i ] * static_cast< T >( -1 );
+		}
+
+		if ( Det == static_cast< T >( 0 ) )
+		{
+			return Matrix< T, S >::Zero;
+		}
+
+		return reinterpret_cast< Matrix< T, S >&& >( Math::Transpose( Math::Cofactor( Min ) ) * ( 1.0f / Det ) );
+	}
+
+	template < typename T >
+	inline static bool IsInf( T a_Scalar )
+	{
+		return isinf( a_Scalar );
+	}
+
+	template < typename T >
+	inline static bool IsNan( T a_Scalar )
+	{
+		return isnan( a_Scalar );
+	}
+
+	template < typename T, size_t S >
+	inline static float Length( const Vector< T, S >& a_Vector )
 	{
 		const T* Data = reinterpret_cast< const T* >( &a_Vector );
 		T Total = 0;
@@ -1410,7 +1615,7 @@ public:
 	}
 
 	template < typename T, size_t S >
-	static T LengthSqrd( const Vector< T, S >& a_Vector )
+	inline static T LengthSqrd( const Vector< T, S >& a_Vector )
 	{
 		const T* Data = reinterpret_cast< const T* >( &a_Vector );
 		T Total = 0;
@@ -1437,21 +1642,77 @@ public:
 		return Total;
 	}
 
-	template < typename T, size_t S >
-	static T Dot( const Vector< T, S >& a_VectorA, const Vector< T, S >& a_VectorB )
+	template < typename T >
+	inline static T Max( T a_ScalarA, T a_ScalarB )
 	{
-		Vector< T, S > Multiplied = a_VectorA * a_VectorB;
-		return Manhatten( Multiplied );
+		return a_ScalarA > a_ScalarB ? a_ScalarA : a_ScalarB;
+	}
+
+	template < typename T, size_t S >
+	static Vector< T, S > Max( Vector< T, S > a_VectorA, const Vector< T, S >& a_VectorB )
+	{
+		for ( size_t i = 0; i < S; ++i )
+		{
+			T& A = a_VectorA[ i ];
+			T& B = a_VectorB[ i ];
+			
+			if ( A < B )
+			{
+				A = B;
+			}
+		}
+
+		return a_VectorA;
 	}
 
 	template < typename T >
-	static T Cross( const Vector< T, 3 >& a_VectorA, const Vector< T, 3 >& a_VectorB )
+	inline static T Min( T a_ScalarA, T a_ScalarB )
 	{
+		return a_ScalarA < a_ScalarB ? a_ScalarA : a_ScalarB;
+	}
 
+	template < typename T, size_t S >
+	static Vector< T, S > Min( Vector< T, S > a_VectorA, const Vector< T, S >& a_VectorB )
+	{
+		for ( size_t i = 0; i < S; ++i )
+		{
+			T& A = a_VectorA[ i ];
+			T& B = a_VectorB[ i ];
+
+			if ( A > B )
+			{
+				A = B;
+			}
+		}
+
+		return a_VectorA;
+	}
+
+	template < typename T, size_t S >
+	inline static Matrix< T, S > Minor( const Matrix< T, S >& a_Matrix )
+	{
+		return reinterpret_cast< const MatrixIndexer< Indexer< T, S, S >, Indexer< T, S > >& >( a_Matrix ).Minor();
+	}
+
+	template < typename T >
+	inline static T Round( T a_Scalar )
+	{
+		return round( a_Scalar );
+	}
+
+	template < typename T, size_t S >
+	inline static Vector< T, S > Round( Vector< T, S > a_Vector )
+	{
+		for ( size_t i = 0; i < S; ++i )
+		{
+			a_Vector[ i ] = round( a_Vector[ i ] );
+		}
+
+		return a_Vector;
 	}
 
 	template < typename T1, typename T2, size_t S >
-	inline static Vector< T1, S > Multuply( const Vector< T1, S >& a_VectorA, const Vector< T2, S >& a_VectorB )
+	inline static Vector< T1, S > Multiply( const Vector< T1, S >& a_VectorA, const Vector< T2, S >& a_VectorB )
 	{
 		return a_VectorA * a_VectorB;
 	}
@@ -1473,11 +1734,44 @@ public:
 
 		return Result;
 	}
-	
-	template < typename T, size_t S >
-	inline static Matrix< T, S > Minor( const Matrix< T, S >& a_Matrix )
+
+	template < typename T >
+	static inline T Sign( T a_Scalar )
 	{
-		return reinterpret_cast< const MatrixIndexer< Indexer< T, S, S >, Indexer< T, S > >& >( a_Matrix ).Minor();
+		return a_Scalar >= static_cast< T >( 0 ) ? static_cast< T >( 1 ) : static_cast< T >( -1 );
+	}
+
+	template < typename T >
+	static inline T SmoothStep( T a_Scalar, T a_EdgeA, T a_EdgeB )
+	{
+		if ( a_Scalar < a_EdgeA )
+		{
+			return static_cast< T >( 0 );
+		}
+
+		if ( a_Scalar > a_EdgeB )
+		{
+			return static_cast< T >( 1 );
+		}
+
+		return ( a_EdgeB - a_EdgeA ) / ( a_Scalar - a_EdgeA );
+	}
+
+	template < typename T >
+	static inline T Step( T a_Scalar, T a_Edge )
+	{
+		if ( a_Scalar < a_Edge )
+		{
+			return static_cast< T >( 0 );
+		}
+
+		return static_cast< T >( 1 );
+	}
+
+	template < typename T >
+	static float Sqrt( T a_Scalar )
+	{
+		return sqrt( a_Scalar );
 	}
 
 	template < typename T, size_t M, size_t N >
@@ -1493,55 +1787,11 @@ public:
 		return Result;
 	}
 
-	template < typename T, size_t S >
-	static inline T Determinant( const Matrix< T, S, S >& a_Matrix )
+	template < typename T >
+	static inline T Truncate( T a_Scalar, T a_Bound )
 	{
-		return reinterpret_cast< const MatrixIndexer< Indexer< T, 4, 4 >, Indexer< T, 4 > >& >( a_Matrix ).Determinant();
-	}
-
-	template < typename T, size_t M, size_t N >
-	static Matrix< T, M, N > Cofactor( Matrix< T, M, N > a_Matrix )
-	{
-		size_t Begin = 1;
-
-		for ( size_t m = 0; m < M; ++m )
-		{
-			auto& Row = a_Matrix.GetRow( m );
-
-			for ( size_t n = Begin; n < N; n += 2 )
-			{
-				Row[ n ] *= static_cast< T >( -1 );
-			}
-
-			Begin = !Begin;
-		}
-
-		return a_Matrix;
-	}
-
-	template < typename T, size_t M, size_t N >
-	inline static Matrix< T, M, N > Adjoint( const Matrix< T, M, N >& a_Matrix )
-	{
-		return Transpose( Cofactor( a_Matrix ) );
-	}
-
-	template < typename T, size_t S >
-	static Vector< T, S > Inverse( const Vector< T, S >& a_Vector )
-	{
-		return a_Vector * static_cast< T >( -1 );
-	}
-
-	template < typename T, size_t S >
-	static Matrix< T, S > Inverse( const Matrix< T, S >& a_Matrix )
-	{
-		T Det = Determinant( a_Matrix );
-
-		if ( Det == static_cast< T >( 0 ) )
-		{
-			return Matrix< T, S >::Zero;
-		}
-
-		return reinterpret_cast< Matrix< T, S >&& >( Adjoint( Minor( a_Matrix ) ) * ( 1.0f / Det ) );
+		a_Bound = Abs( a_Bound );
+		return Clamp( a_Scalae, -a_Bound, a_Bound );
 	}
 
 private:
@@ -1626,7 +1876,18 @@ private:
 			return reinterpret_cast< const MatrixIndexer< SubMatrixIndexerM, SubMatrixIndexerN >& >( *this );
 		}
 
-		auto& Minor() const
+		template < size_t Col = 0 >
+		void Cross()
+		{
+			GetRow( 0 )[ Col ] = GetSubMatrixIndexer< 0, Col >().Determinant() * ( Col % 2 == 0 ? 1 : -1 );
+
+			if constexpr ( Col < SizeM - 1 )
+			{
+				Cross< Col + 1 >();
+			}
+		}
+
+		Matrix< typename _IndexerM::ValueType, SizeM > Minor() const
 		{
 			 Matrix< typename _IndexerM::ValueType, SizeM > Result;
 			 Minor< 0, 0 >( Result );
@@ -1638,16 +1899,16 @@ private:
 		{
 			a_Result.GetRow( Row )[ Col ] = GetSubMatrixIndexer< Row, Col >().Determinant();
 
-			if constexpr ( Col == SizeN - 1 )
+			if constexpr ( Col < SizeN - 1 )
 			{
-				if constexpr ( Row < SizeM )
-				{
-					Minor< Row + 1, 0 >( a_Result );
-				}
+				Minor< Row, Col + 1 >( a_Result );
 			}
 			else
 			{
-				Minor< Row, Col + 1 >( a_Result );
+				if constexpr ( Row < SizeM - 1 )
+				{
+					Minor< Row + 1, 0 >( a_Result );
+				}
 			}
 		}
 
