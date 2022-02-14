@@ -1650,9 +1650,53 @@ struct Matrix< T, 4 > : public IMatrix< T, 4 >
 	}
 
 	template < typename U, typename V, typename W >
-	inline static Matrix< T, 4 > LookAt( const Vector< U, 3 >& a_Eye, const Vector< V, 3 >& a_Centre, const Vector< W, 3 >& a_Up )
+	inline static Matrix< T, 4 > CreateLookAt( const Vector< U, 3 >& a_Eye, const Vector< V, 3 >& a_Centre, const Vector< W, 3 >& a_Up )
 	{
-		return Matrix< T, 4 >();
+		auto Forward = Math::Normalize( a_Centre - a_Eye );
+		auto Right = Math::Cross( a_Up, Forward );
+		auto Up = Math::Cross( Forward, Right );
+
+		return Matrix< T, 4 >( 
+			static_cast< T >( Right.x ), 
+			static_cast< T >( Right.y ),
+			static_cast< T >( Right.z ), 
+			static_cast< T >( 0 ),
+			static_cast< T >( Up.x ),
+			static_cast< T >( Up.y ),
+			static_cast< T >( Up.z ),
+			static_cast< T >( 0 ),
+			static_cast< T >( Forward.x ),
+			static_cast< T >( Forward.y ),
+			static_cast< T >( Forward.z ),
+			static_cast< T >( 0 ),
+			static_cast< T >( a_Centre.x ),
+			static_cast< T >( a_Centre.y ),
+			static_cast< T >( a_Centre.z ),
+			static_cast< T >( 1 ) );
+	}
+
+	inline static Matrix< T, 4 > CreateProjection( float a_FOV, float a_Aspect, float a_NearZ = 0.1f, float a_FarZ = 1000.0f )
+	{
+		float HalfCot = 1.0f / Math::Tan( a_FOV * 0.5f );
+		float FarRatio = a_FarZ / ( a_FarZ - a_NearZ );
+
+		return Matrix< T, 4 >(
+			static_cast< T >( HalfCot / a_Aspect ),
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( HalfCot ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( FarRatio ), 
+			static_cast< T >( 1 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( 0 ), 
+			static_cast< T >( -FarRatio * a_NearZ ), 
+			static_cast< T >( 0 ) );
 	}
 
 	static const Matrix< T, 4 > Zero;
