@@ -11,7 +11,7 @@ struct Vector;
 template < typename T, size_t M, size_t N >
 struct Matrix;
 
-enum class RotationOrder
+enum class RotationOrder : char
 {
 	XYZ,
 	XZY,
@@ -376,10 +376,18 @@ struct Vector< T, 2 > : public IVector< T, 2 >
 
 	static const Vector< T, 2 > Zero;
 	static const Vector< T, 2 > One;
+	static const Vector< T, 2 > Up;
+	static const Vector< T, 2 > Down;
+	static const Vector< T, 2 > Left;
+	static const Vector< T, 2 > Right;
 };
 
-template < typename T > const Vector< T, 2 > Vector< T, 2 >::Zero( 0, 0 );
-template < typename T > const Vector< T, 2 > Vector< T, 2 >::One ( 1, 1 );
+template < typename T > const Vector< T, 2 > Vector< T, 2 >::Zero (  0,  0 );
+template < typename T > const Vector< T, 2 > Vector< T, 2 >::One  (  1,  1 );
+template < typename T > const Vector< T, 2 > Vector< T, 2 >::Up   (  0,  1 );
+template < typename T > const Vector< T, 2 > Vector< T, 2 >::Down (  0, -1 );
+template < typename T > const Vector< T, 2 > Vector< T, 2 >::Left ( -1,  0 );
+template < typename T > const Vector< T, 2 > Vector< T, 2 >::Right(  1,  0 );
 
 template < typename T >
 struct Vector< T, 3 > : public IVector< T, 3 >
@@ -457,10 +465,23 @@ struct Vector< T, 3 > : public IVector< T, 3 >
 
 	static const Vector< T, 3 > Zero;
 	static const Vector< T, 3 > One;
+	static const Vector< T, 3 > Up;
+	static const Vector< T, 3 > Down;
+	static const Vector< T, 3 > Left;
+	static const Vector< T, 3 > Right;
+	static const Vector< T, 3 > Forward;
+	static const Vector< T, 3 > Backward;
+
 };
 
-template < typename T > const Vector< T, 3 > Vector< T, 3 >::Zero( 0, 0, 0 );
-template < typename T > const Vector< T, 3 > Vector< T, 3 >::One ( 1, 1, 1 );
+template < typename T > const Vector< T, 3 > Vector< T, 3 >::Zero    (  0,  0,  0 );
+template < typename T > const Vector< T, 3 > Vector< T, 3 >::One     (  1,  1,  1 );
+template < typename T > const Vector< T, 3 > Vector< T, 3 >::Up      (  0,  1,  0 );
+template < typename T > const Vector< T, 3 > Vector< T, 3 >::Down    (  0, -1,  0 );
+template < typename T > const Vector< T, 3 > Vector< T, 3 >::Left    ( -1,  0,  0 );
+template < typename T > const Vector< T, 3 > Vector< T, 3 >::Right   (  1,  0,  0 );
+template < typename T > const Vector< T, 3 > Vector< T, 3 >::Forward (  0,  0,  1 );
+template < typename T > const Vector< T, 3 > Vector< T, 3 >::Backward(  0,  0, -1 );
 
 template < typename T >
 struct Vector< T, 4 > : public IVector< T, 4 >
@@ -1288,6 +1309,23 @@ struct Matrix< T, 3 > : IMatrix< T, 3 >
 		a_Matrix.y1 *= static_cast< U >( a_Vector.y );
 	}
 
+	template < typename U, typename V, typename W >
+	inline static Matrix< T, 3 > CreateTransform( const Vector< U, 2 >& a_Translation, V a_Rotation, const Vector< W, 2 >& a_Scale )
+	{
+		Matrix< T, 3 > Result = CreateScale( a_Scale );
+		Rotate( Result, a_Rotation );
+		Translate( Result, a_Translation );
+		return Result;
+	}
+
+	template < typename U, typename V, typename W, typename X >
+	inline static void Transform( Matrix< U, 3 >& a_Matrix, const Vector< U, 2 >& a_Translation, V a_Rotation, const Vector< W, 2 >& a_Scale )
+	{
+		Scale( a_Matrix, a_Scale );
+		Rotate( a_Matrix, a_Rotation );
+		Translate( a_Matrix, a_Translation );
+	}
+
 	static const Matrix< T, 3 > Zero;
 	static const Matrix< T, 3 > One;
 	static const Matrix< T, 3 > Identity;
@@ -1444,6 +1482,28 @@ struct Matrix< T, 4 > : public IMatrix< T, 4 >
 	}
 
 	template < typename U >
+	static Matrix< T, 4 > CreateRotation( const Vector< U, 3 >& a_Vector, RotationOrder a_RotationOrder = RotationOrder::ZXY )
+	{
+		switch ( a_RotationOrder )
+		{
+		case RotationOrder::XYZ:
+			return RotateX( RotateY( CreateRotationZ( static_cast< T >( a_Vector.z ) ), static_cast< T >( a_Vector.y ) ), static_cast< T >( a_Vector.x ) );
+		case RotationOrder::XZY:
+			return RotateX( RotateZ( CreateRotationY( static_cast< T >( a_Vector.y ) ), static_cast< T >( a_Vector.z ) ), static_cast< T >( a_Vector.x ) );
+		case RotationOrder::YXZ:
+			return RotateY( RotateX( CreateRotationZ( static_cast< T >( a_Vector.z ) ), static_cast< T >( a_Vector.x ) ), static_cast< T >( a_Vector.y ) );
+		case RotationOrder::YZX:
+			return RotateY( RotateZ( CreateRotationX( static_cast< T >( a_Vector.x ) ), static_cast< T >( a_Vector.z ) ), static_cast< T >( a_Vector.y ) );
+		case RotationOrder::ZXY:
+			return RotateZ( RotateX( CreateRotationY( static_cast< T >( a_Vector.y ) ), static_cast< T >( a_Vector.x ) ), static_cast< T >( a_Vector.z ) );
+		case RotationOrder::ZYX:
+			return RotateZ( RotateY( CreateRotationX( static_cast< T >( a_Vector.x ) ), static_cast< T >( a_Vector.y ) ), static_cast< T >( a_Vector.z ) );
+		default:
+			break;
+		}
+	}
+
+	template < typename U >
 	static Matrix< T, 4 > CreateRotationX( U a_Radians )
 	{
 		U C = Math::Cos( a_Radians );
@@ -1519,6 +1579,12 @@ struct Matrix< T, 4 > : public IMatrix< T, 4 >
 	}
 
 	template < typename U, typename V >
+	inline static void Rotate( Matrix< U, 4 >& a_Matrix, const Vector< V, 3 >& a_Vector, RotationOrder a_RotationOrder = RotationOrder::ZXY )
+	{
+		a_Matrix = CreateRotation( a_Vector, a_RotationOrder ) * a_Matrix;
+	}
+
+	template < typename U, typename V >
 	inline static void RotateX( Matrix< U, 4 >& a_Matrix, V a_Radians )
 	{
 		a_Matrix = Math::Multiply( CreateRotationX( a_Radians ), a_Matrix );
@@ -1567,9 +1633,26 @@ struct Matrix< T, 4 > : public IMatrix< T, 4 >
 	}
 
 	template < typename U, typename V, typename W >
-	inline static Matrix< T, 4 > CreateTransform( const Vector< U, 3 >& a_Translate, const Vector< V, 3 >& a_Rotation, const Vector< W, 3 >& a_Scale, RotationOrder = RotationOrder::ZXY )
+	inline static Matrix< T, 4 > CreateTransform( const Vector< U, 3 >& a_Translation, const Vector< V, 3 >& a_Rotation, const Vector< W, 3 >& a_Scale, RotationOrder a_RotationOrder = RotationOrder::ZXY )
 	{
-		
+		Matrix< T, 4 > Result = CreateScale( a_Scale );
+		Rotate( Result, a_Rotation, a_RotationOrder );
+		Translate( Result, a_Translation );
+		return Result;
+	}
+
+	template < typename U, typename V, typename W, typename X >
+	inline static void Transform( Matrix< U, 4 >& a_Matrix, const Vector< V, 3 >& a_Translation, const Vector< W, 3 >& a_Rotation, const Vector< X, 3 >& a_Scale, RotationOrder a_RotationOrder = RotationOrder::ZXY )
+	{
+		Scale( a_Matrix, a_Scale );
+		Rotate( a_Matrix, a_Rotation, a_RotationOrder );
+		Translate( a_Matrix, a_Translation );
+	}
+
+	template < typename U, typename V, typename W >
+	inline static Matrix< T, 4 > LookAt( const Vector< U, 3 >& a_Eye, const Vector< V, 3 >& a_Centre, const Vector< W, 3 >& a_Up )
+	{
+		return Matrix< T, 4 >();
 	}
 
 	static const Matrix< T, 4 > Zero;
@@ -1601,6 +1684,8 @@ typedef Matrix< int, 4 > Matrix4Int;
 
 class Math
 {
+	Math() = delete;
+
 public:
 
 	template < typename T >
@@ -1795,7 +1880,7 @@ public:
 	template < typename T >
 	inline static T Degrees( T a_Radians )
 	{
-		return static_cast< T >( 180 ) * a_Radians * InversePi< T >();
+		return static_cast< T >( 180 ) * InversePi() * a_Radians;
 	}
 
 	template < typename T, size_t S >
@@ -1823,6 +1908,18 @@ public:
 		return Manhatten( Multiplied );
 	}
 	
+	template < typename T = float >
+	inline static constexpr T E()
+	{
+		return static_cast< T >( 2.71828182845904523536 );
+	}
+
+	template < typename T = float >
+	inline static constexpr T Epsilon()
+	{
+		return static_cast< T >( FLT_MIN );
+	}
+
 	template < typename T >
 	inline static T Exp( T a_Scalar )
 	{
@@ -1902,8 +1999,14 @@ public:
 		return reinterpret_cast< Matrix< T, S >&& >( Math::Transpose( Math::Cofactor( Min ) ) * ( 1.0f / Det ) );
 	}
 
-	template < typename T >
-	inline static T InversePi()
+	template < typename T = float >
+	inline static constexpr T InverseE()
+	{
+		return static_cast< T >( 1.0 / 2.71828182845904523536 );
+	}
+
+	template < typename T = float >
+	inline static constexpr T InversePi()
 	{
 		return static_cast< T >( 1.0 / 3.14159265358979323846 );
 	}
@@ -1926,6 +2029,18 @@ public:
 	}
 
 	template < typename T >
+	inline static bool IsEpsilonEqual( T a_ValueA, T a_ValueB )
+	{
+		return Abs( a_ValueA - a_ValueB ) <= Epsilon();
+	}
+
+	template < typename T >
+	inline static bool IsEpsilonNotEqual( T a_ValueA, T a_ValueB )
+	{
+		return Abs( a_ValueA - a_ValueB ) > Epsilon();
+	}
+
+	template < typename T >
 	inline static bool IsInf( T a_Scalar )
 	{
 		return isinf( a_Scalar );
@@ -1935,18 +2050,6 @@ public:
 	inline static bool IsNan( T a_Scalar )
 	{
 		return isnan( a_Scalar );
-	}
-
-	template < typename T >
-	inline static float Log( T a_Scalar )
-	{
-		return log( a_Scalar );
-	}
-
-	template < typename T >
-	inline static float Log2( T a_Scalar )
-	{
-		return log2( a_Scalar );
 	}
 
 	template < typename T, size_t S >
@@ -1977,6 +2080,18 @@ public:
 		}
 
 		return Total;
+	}
+
+	template < typename T >
+	inline static float Log( T a_Scalar )
+	{
+		return log( a_Scalar );
+	}
+
+	template < typename T >
+	inline static float Log2( T a_Scalar )
+	{
+		return log2( a_Scalar );
 	}
 
 	template < typename T, size_t S >
@@ -2050,8 +2165,8 @@ public:
 		return a_Vector * InverseSqrt( LengthSqrd( a_Vector ) );
 	}
 
-	template < typename T >
-	inline static T Pi()
+	template < typename T = float >
+	inline static constexpr T Pi()
 	{
 		return static_cast< T >( 3.14159265358979323846 );
 	}
@@ -2065,7 +2180,7 @@ public:
 	template < typename T >
 	inline static T Radians( T a_Degrees )
 	{
-		return Pi< T >() * a_Degrees / static_cast< T >( 180 );
+		return a_Degrees * Pi() * static_cast< float >( 0.00555555555555555555 );
 	}
 
 	template < typename T, size_t S >
